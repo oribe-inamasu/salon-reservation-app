@@ -1,0 +1,48 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Customer {
+  id                     String         @id @default(uuid())
+  name                   String
+  furigana               String
+  birth_date             String?
+  occupation             String?
+  address                String?
+  phone_number           String?
+  pain_area              String?
+  symptoms               String?
+  when_symptoms_felt     String?
+  visited_hospital       String?
+  hospital_diagnosis     String?
+  possible_cause         String?
+  desired_duration       String?
+  desired_treatment      String?
+  current_treatment      String?
+  past_injury            String?
+  massage_frequency      String?
+  experienced_momikaeshi String?
+  possible_pregnancy     String?
+  referral_source        String?
+  additional_concerns    String?
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+  visitHistories         VisitHistory[]
+}
+
+model VisitHistory {
+  id               String   @id @default(uuid())
+  customerId       String
+  customer         Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  visit_date       DateTime @default(now())
+  treatment_category String?
+  treatment_content String?
+  price            Int?
+  staff_memo       String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
