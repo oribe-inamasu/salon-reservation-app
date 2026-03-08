@@ -1,23 +1,20 @@
 import Link from "next/link";
 import { Search, Plus, User, ChevronRight } from "lucide-react";
-import { ATTRIBUTE_LABELS, type AttributeLabelCode } from "@/lib/constants";
+import prisma from "@/lib/prisma";
 
-// TODO: Replace with real data from Prisma
-const mockCustomers: Array<{
-  id: string;
-  name: string;
-  furigana: string;
-  lastVisit: string;
-  visitCount: number;
-  attribute?: AttributeLabelCode;
-}> = [
-    { id: "1", name: "山田 花子", furigana: "ヤマダ ハナコ", lastVisit: "2023-10-25", visitCount: 3, attribute: "F_30_40" },
-    { id: "2", name: "鈴木 一郎", furigana: "スズキ イチロウ", lastVisit: "2023-10-24", visitCount: 1, attribute: "M_50_60" },
-    { id: "3", name: "佐藤 美咲", furigana: "サトウ ミサキ", lastVisit: "2023-10-20", visitCount: 12, attribute: "F_10_20" },
-    { id: "4", name: "高橋 健太", furigana: "タカハシ ケンタ", lastVisit: "2023-10-18", visitCount: 5, attribute: "SPECIAL_1" },
-  ];
+export const dynamic = "force-dynamic";
 
-export default function Home() {
+export default async function Home() {
+  const customers = await prisma.customer.findMany({
+    include: {
+      visitHistories: {
+        orderBy: { visit_date: "desc" },
+        take: 1,
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
   return (
     <div className="flex flex-col min-h-screen">
       {/* Header */}
@@ -45,7 +42,7 @@ export default function Home() {
       {/* Main Content (Customer List) */}
       <main className="flex-1 p-3">
         <div className="flex justify-between items-center mb-3 px-1">
-          <span className="text-xs font-medium text-muted-foreground">全 {mockCustomers.length} 件</span>
+          <span className="text-xs font-medium text-muted-foreground">全 {customers.length} 件</span>
           <select className="text-xs bg-transparent text-primary font-medium focus:outline-none">
             <option>五十音順</option>
             <option>来店日順</option>
@@ -53,39 +50,47 @@ export default function Home() {
           </select>
         </div>
 
-        <div className="space-y-2">
-          {mockCustomers.map((customer) => (
-            <Link
-              key={customer.id}
-              href={`/customers/${customer.id}`}
-              className="flex items-center p-3 bg-card border rounded-2xl shadow-sm hover:shadow-md transition-shadow active:scale-[0.98]"
-            >
-              {/* Avatar Placeholder */}
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
-                <User className="w-6 h-6" />
-              </div>
+        {customers.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            <User className="w-12 h-12 mx-auto mb-3 opacity-30" />
+            <p className="text-sm">まだ顧客データがありません</p>
+            <p className="text-xs mt-1">Googleフォームから予診票が送信されると、ここに表示されます</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {customers.map((customer) => {
+              const lastVisit = customer.visitHistories[0];
+              const visitCount = customer.visitHistories.length;
 
-              {/* Info */}
-              <div className="ml-4 flex-1 overflow-hidden">
-                <div className="flex items-center gap-2 mb-0.5 text-[10px]">
-                  <div className="text-muted-foreground truncate">{customer.furigana}</div>
-                  {customer.attribute && (
-                    <span className={`px-1.5 py-0.5 rounded-full font-medium ${ATTRIBUTE_LABELS[customer.attribute].colorClass}`}>
-                      {ATTRIBUTE_LABELS[customer.attribute].label}
-                    </span>
-                  )}
-                </div>
-                <div className="text-base font-bold text-foreground truncate">{customer.name} 様</div>
-                <div className="flex gap-3 mt-1.5 text-xs text-muted-foreground">
-                  <span>来店: {customer.visitCount}回</span>
-                  <span>最終: {customer.lastVisit}</span>
-                </div>
-              </div>
+              return (
+                <Link
+                  key={customer.id}
+                  href={`/customers/${customer.id}`}
+                  className="flex items-center p-3 bg-card border rounded-2xl shadow-sm hover:shadow-md transition-shadow active:scale-[0.98]"
+                >
+                  {/* Avatar Placeholder */}
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+                    <User className="w-6 h-6" />
+                  </div>
 
-              <ChevronRight className="w-5 h-5 text-muted-foreground/50 ml-2" />
-            </Link>
-          ))}
-        </div>
+                  {/* Info */}
+                  <div className="ml-4 flex-1 overflow-hidden">
+                    <div className="flex items-center gap-2 mb-0.5 text-[10px]">
+                      <div className="text-muted-foreground truncate">{customer.furigana}</div>
+                    </div>
+                    <div className="text-base font-bold text-foreground truncate">{customer.name} 様</div>
+                    <div className="flex gap-3 mt-1.5 text-xs text-muted-foreground">
+                      <span>登録: {customer.createdAt.toLocaleDateString("ja-JP")}</span>
+                      {lastVisit && <span>最終来店: {lastVisit.visit_date.toLocaleDateString("ja-JP")}</span>}
+                    </div>
+                  </div>
+
+                  <ChevronRight className="w-5 h-5 text-muted-foreground/50 ml-2" />
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </main>
     </div>
   );
