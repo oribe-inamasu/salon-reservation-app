@@ -30,7 +30,7 @@ export default function Reports() {
     return (
         <div className="flex flex-col min-h-screen pb-20 bg-muted/30">
             {/* Header */}
-            <header className="sticky top-0 z-40 w-full glass bg-primary text-primary-foreground border-b border-primary-foreground/20">
+            <header className="sticky top-0 z-40 w-full bg-primary text-primary-foreground border-b border-primary-foreground/20 shadow-md">
                 <div className="flex items-center h-14 px-4 justify-center">
                     <h1 className="text-lg font-bold">売上レポート (カテゴリ別)</h1>
                 </div>

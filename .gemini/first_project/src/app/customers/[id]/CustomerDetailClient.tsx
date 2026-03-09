@@ -48,7 +48,7 @@ export default function CustomerDetailClient({ customer }: { customer: Serialize
     return (
         <div className="flex flex-col min-h-screen pb-20 bg-muted/30">
             {/* Header */}
-            <header className="sticky top-0 z-40 w-full glass bg-primary text-primary-foreground border-b border-primary-foreground/20">
+            <header className="sticky top-0 z-40 w-full bg-primary text-primary-foreground border-b border-primary-foreground/20 shadow-md">
                 <div className="flex items-center h-14 px-4">
                     <Link href="/" className="p-2 -ml-2 text-primary-foreground hover:bg-white/10 rounded-full transition-colors">
                         <ChevronLeft className="w-6 h-6" />
@@ -56,9 +56,9 @@ export default function CustomerDetailClient({ customer }: { customer: Serialize
                     <div className="flex-1 text-center font-bold text-lg truncate">
                         {customer.name} 様
                     </div>
-                    <button className="p-2 -mr-2 text-primary-foreground hover:bg-white/10 rounded-full transition-colors">
+                    <Link href={`/customers/${customer.id}/edit`} className="p-2 -mr-2 text-primary-foreground hover:bg-white/10 rounded-full transition-colors">
                         <Edit3 className="w-5 h-5" />
-                    </button>
+                    </Link>
                 </div>
             </header>
 
