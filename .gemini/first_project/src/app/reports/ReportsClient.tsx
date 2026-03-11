@@ -177,7 +177,7 @@ export default function ReportsClient({
                                             onClick={() => setExpandedStaffName(isExpanded ? null : staff.name)}
                                         >
                                             <div className="flex justify-between items-end text-sm">
-                                                <span className="font-medium text-foreground flex items-center gap-1">
+                                                <span className="font-medium text-stone-700 flex items-center gap-1">
                                                     {staff.name}
                                                     {isExpanded ? <ChevronUp className="w-4 h-4 text-stone-400" /> : <ChevronDown className="w-4 h-4 text-stone-400" />}
                                                 </span>
