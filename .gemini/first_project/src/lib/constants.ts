@@ -32,3 +32,12 @@ export const SERVICE_CATEGORIES = [
 ] as const;
 
 export type ServiceCategory = typeof SERVICE_CATEGORIES[number];
+
+export const STAFF_MEMBERS = [
+    "院長（スタッフA）",
+    "スタッフB",
+    "スタッフC",
+    "指名なし",
+] as const;
+
+export type StaffMember = typeof STAFF_MEMBERS[number];

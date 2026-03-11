@@ -29,21 +29,49 @@ model Customer {
   possible_pregnancy     String?
   referral_source        String?
   additional_concerns    String?
-  attribute_label        String?
   createdAt              DateTime       @default(now())
   updatedAt              DateTime       @updatedAt
+  attribute_label        String?
+  bookings               Booking[]
   visitHistories         VisitHistory[]
 }
 
 model VisitHistory {
-  id               String   @id @default(uuid())
-  customerId       String
-  customer         Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  visit_date       DateTime @default(now())
+  id                 String   @id @default(uuid())
+  customerId         String
+  visit_date         DateTime @default(now())
   treatment_category String?
-  treatment_content String?
-  price            Int?
-  staff_memo       String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  treatment_content  String?
+  price              Int?
+  staff              String?
+  staff_memo         String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  customer           Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  bookingId          String?  @unique
+  booking            Booking? @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+
+model Booking {
+  id                 String        @id @default(uuid())
+  customerId         String
+  start_time         DateTime
+  end_time           DateTime
+  treatment_category String?
+  memo               String?
+  status             String        @default("scheduled") // "scheduled", "completed", "cancelled"
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  price              Int?
+  staff              String?
+  customer           Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  visitHistory       VisitHistory?
+}
+
+model AppSetting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

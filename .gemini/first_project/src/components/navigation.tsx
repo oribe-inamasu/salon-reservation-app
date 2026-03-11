@@ -15,13 +15,13 @@ export function BottomNav() {
 
     const links = [
         { href: "/", label: "顧客", icon: Users },
-        { href: "/appointments", label: "予約・カレンダー", icon: Calendar },
+        { href: "/appointments", label: "カレンダー", icon: Calendar },
         { href: "/reports", label: "売上", icon: FileText },
         { href: "/settings", label: "設定", icon: Settings },
     ];
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 z-50 glass border-t pb-safe dark:border-slate-800 bg-white/80 dark:bg-slate-900/80">
+        <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-primary-foreground/20 pb-safe bg-primary shadow-[0_-2px_10px_rgba(0,0,0,0.1)]">
             <div className="flex justify-around items-center h-16">
                 {links.map((link) => {
                     const Icon = link.icon;
@@ -32,16 +32,17 @@ export function BottomNav() {
                             key={link.href}
                             href={link.href}
                             className={cn(
-                                "flex flex-col items-center justify-center w-full h-full space-y-1 text-xs transition-colors duration-200",
+                                "flex flex-col items-center justify-center w-full h-full relative text-xs transition-colors duration-200",
                                 isActive
-                                    ? "text-primary font-bold"
-                                    : "text-muted-foreground hover:text-foreground"
+                                    ? "text-white font-bold bg-white/10"
+                                    : "text-primary-foreground/60 hover:text-primary-foreground/80"
                             )}
                         >
-                            <div className={cn("flex flex-col items-center justify-center relative w-full h-full", isActive ? "before:absolute before:top-[-10px] before:w-12 before:h-1 before:bg-primary before:rounded-b-md bg-primary/5" : "")}>
-                                <Icon className={cn("w-6 h-6", isActive ? "text-primary" : "")} />
-                                <span className={cn("mt-1", isActive ? "text-primary font-bold" : "")}>{link.label}</span>
-                            </div>
+                            {isActive && (
+                                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-white rounded-b-md" />
+                            )}
+                            <Icon className={cn("w-6 h-6 mb-1", isActive ? "text-white" : "")} />
+                            <span>{link.label}</span>
                         </Link>
                     );
                 })}

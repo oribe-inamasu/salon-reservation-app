@@ -1,8 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
-import { ChevronLeft, Edit3, Calendar, Clock, FileText, Phone, MapPin, Plus } from "lucide-react";
+import { ChevronLeft, Edit3, Calendar, Clock, FileText, Phone, MapPin, Plus, TrendingUp, Award } from "lucide-react";
+
+function calculateAge(birthDateStr: string | null): number | null {
+    if (!birthDateStr) return null;
+    const birthDate = new Date(birthDateStr);
+    if (isNaN(birthDate.getTime())) return null;
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+    }
+    return age;
+}
 
 type SerializedCustomer = {
     id: string;
@@ -36,6 +49,7 @@ type SerializedCustomer = {
         treatment_category: string | null;
         treatment_content: string | null;
         price: number | null;
+        staff: string | null;
         staff_memo: string | null;
         createdAt: string;
         updatedAt: string;
@@ -44,6 +58,29 @@ type SerializedCustomer = {
 
 export default function CustomerDetailClient({ customer }: { customer: SerializedCustomer }) {
     const [activeTab, setActiveTab] = useState<"intake" | "history">("intake");
+
+    const totalVisits = customer.visitHistories.length;
+    const totalSales = customer.visitHistories.reduce((sum, visit) => sum + (visit.price || 0), 0);
+
+    const mostFrequentTreatment = useMemo(() => {
+        if (totalVisits === 0) return "データなし";
+        const counts = customer.visitHistories.reduce((acc, visit) => {
+            if (visit.treatment_category) {
+                acc[visit.treatment_category] = (acc[visit.treatment_category] || 0) + 1;
+            }
+            return acc;
+        }, {} as Record<string, number>);
+
+        let maxCategory = "データなし";
+        let maxCount = 0;
+        for (const [category, count] of Object.entries(counts)) {
+            if (count > maxCount) {
+                maxCount = count;
+                maxCategory = category;
+            }
+        }
+        return maxCategory;
+    }, [customer.visitHistories, totalVisits]);
 
     return (
         <div className="flex flex-col min-h-screen pb-20 bg-muted/30">
@@ -72,11 +109,32 @@ export default function CustomerDetailClient({ customer }: { customer: Serialize
                         <div className="flex-1 overflow-hidden">
                             <div className="flex items-center gap-2 mb-1 text-xs">
                                 <div className="text-muted-foreground truncate">{customer.furigana}</div>
+                                {calculateAge(customer.birth_date) !== null && (
+                                    <div className="text-muted-foreground font-medium">
+                                        {calculateAge(customer.birth_date)}歳
+                                    </div>
+                                )}
                             </div>
                             <div className="text-xl font-bold dark:text-slate-100 truncate">{customer.name}</div>
                         </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 text-sm pt-2 border-t mt-2">
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-3 gap-2 py-3 border-y mt-3 mb-1">
+                        <div className="flex flex-col items-center justify-center text-center p-2 bg-muted/30 rounded-lg">
+                            <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1"><Clock className="w-3 h-3" />来店数</div>
+                            <div className="font-bold text-base">{totalVisits}<span className="text-xs font-normal ml-0.5">回</span></div>
+                        </div>
+                        <div className="flex flex-col items-center justify-center text-center p-2 bg-muted/30 rounded-lg">
+                            <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1"><TrendingUp className="w-3 h-3" />総売上</div>
+                            <div className="font-bold text-base text-primary">¥{totalSales.toLocaleString()}</div>
+                        </div>
+                        <div className="flex flex-col items-center justify-center text-center p-2 bg-muted/30 rounded-lg">
+                            <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1"><Award className="w-3 h-3" />最多コース</div>
+                            <div className="font-bold text-xs line-clamp-2 leading-tight">{mostFrequentTreatment}</div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-sm pt-1">
                         {customer.phone_number && (
                             <div className="flex items-center gap-2 text-muted-foreground">
                                 <Phone className="w-4 h-4" /> {customer.phone_number}
@@ -202,14 +260,25 @@ export default function CustomerDetailClient({ customer }: { customer: Serialize
                                                     {new Date(visit.visit_date).toLocaleDateString("ja-JP")}
                                                 </div>
                                                 {visit.price != null && (
-                                                    <div className="text-sm font-bold text-primary">
+                                                    <div className="text-sm font-bold text-primary mr-8">
                                                         {visit.price.toLocaleString()}円
                                                     </div>
                                                 )}
+                                                <Link
+                                                    href={`/customers/${customer.id}/visits/${visit.id}/edit`}
+                                                    className="absolute top-4 right-4 text-muted-foreground hover:text-primary transition-colors p-1"
+                                                >
+                                                    <Edit3 className="w-4 h-4" />
+                                                </Link>
                                             </div>
                                             {(visit.treatment_category || visit.treatment_content) && (
                                                 <div className="text-sm font-medium mb-2 pb-2 border-b">
                                                     {visit.treatment_category}{visit.treatment_content ? ` - ${visit.treatment_content}` : ""}
+                                                    {visit.staff && (
+                                                        <span className="ml-2 px-2 py-0.5 bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 text-xs rounded-md">
+                                                            担当: {visit.staff}
+                                                        </span>
+                                                    )}
                                                 </div>
                                             )}
                                             {visit.staff_memo && (

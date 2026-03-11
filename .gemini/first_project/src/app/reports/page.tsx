@@ -1,99 +1,125 @@
-"use client";
+import prisma from "@/lib/prisma";
+import ReportsClient from "./ReportsClient";
+import { getAppSettings } from "@/lib/settings";
 
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
-import { SERVICE_CATEGORIES } from "@/lib/constants";
+export const dynamic = "force-dynamic";
 
-// Mock data for sales report
-const mockSalesData = [
-    { name: "リラクゼーションマッサージ・指圧", value: 45000 },
-    { name: "鍼治療", value: 32000 },
-    { name: "美容鍼", value: 28000 },
-    { name: "矯正・関節調整", value: 15000 },
-    { name: "産後骨盤矯正", value: 12000 },
-    { name: "ヘッドマッサージ", value: 8000 },
-    { name: "お顔周りの調整", value: 5000 },
-];
+export default async function ReportsPage({
+    searchParams
+}: {
+    searchParams: Promise<{ month?: string }>
+}) {
+    const params = await searchParams;
+    const appSettings = await getAppSettings();
+    const { serviceNames, staffNames, serviceColorMap, staffColorMap } = appSettings;
 
-const COLORS = [
-    "#3b82f6", // Blue
-    "#f59e0b", // Amber
-    "#10b981", // Emerald
-    "#ec4899", // Pink
-    "#8b5cf6", // Purple
-    "#06b6d4", // Cyan
-    "#ef4444", // Red
-];
+    // Parse the requested month, or use current month
+    let targetDate = new Date();
+    // Use Japanese timezone (JST) as base for current month if strictly necessary, 
+    // but the system default date with 1st day is usually enough for JST offset.
+    if (params.month && /^\d{4}-\d{2}$/.test(params.month)) {
+        const [year, month] = params.month.split('-');
+        targetDate = new Date(Number(year), Number(month) - 1, 1);
+    }
 
-export default function Reports() {
-    const totalSales = mockSalesData.reduce((sum, item) => sum + item.value, 0);
+    // Calculate boundaries for the query
+    const startOfMonth = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1);
+    const endOfMonth = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 1);
+
+    // Formatted current month string for the UI
+    const formatter = new Intl.DateTimeFormat("ja-JP", { year: "numeric", month: "long" });
+    const currentMonthLabel = formatter.format(startOfMonth); // e.g., "2026年3月"
+    const currentMonthValue = `${startOfMonth.getFullYear()}-${String(startOfMonth.getMonth() + 1).padStart(2, '0')}`;
+
+    const visits = await prisma.visitHistory.findMany({
+        where: {
+            visit_date: {
+                gte: startOfMonth,
+                lt: endOfMonth, // End of month boundary
+            },
+        },
+        include: {
+            customer: {
+                select: {
+                    name: true,
+                }
+            }
+        },
+        orderBy: {
+            visit_date: "desc",
+        }
+    });
+
+    // Aggregate by category
+    const salesByCategory = serviceNames.map(category => {
+        const total = visits
+            .filter(v => v.treatment_category === category)
+            .reduce((sum, v) => sum + (v.price || 0), 0);
+
+        return {
+            name: category,
+            value: total,
+        };
+    }).filter(item => item.value > 0);
+
+    // Aggregate by staff
+    const salesByStaff = staffNames.map(staff => {
+        const staffVisits = visits.filter(v => v.staff === staff);
+        const total = staffVisits.reduce((sum, v) => sum + (v.price || 0), 0);
+
+        const categories = serviceNames.map(category => {
+            return {
+                name: category,
+                value: staffVisits.filter(v => v.treatment_category === category).reduce((sum, v) => sum + (v.price || 0), 0)
+            };
+        }).filter(c => c.value > 0);
+
+        return {
+            name: staff,
+            value: total,
+            categories,
+            visits: staffVisits,
+        };
+    });
+
+    // Handle null staff as "指名なし"
+    const noStaffVisits = visits.filter(v => !v.staff);
+    const noStaffTotal = noStaffVisits.reduce((sum, v) => sum + (v.price || 0), 0);
+
+    if (noStaffTotal > 0) {
+        const categories = serviceNames.map(category => {
+            return {
+                name: category,
+                value: noStaffVisits.filter(v => v.treatment_category === category).reduce((sum, v) => sum + (v.price || 0), 0)
+            };
+        }).filter(c => c.value > 0);
+
+        const noStaffIndex = salesByStaff.findIndex(item => item.name === "指名なし");
+        if (noStaffIndex !== -1) {
+            salesByStaff[noStaffIndex].value += noStaffTotal;
+            // For simplicity, we assume "指名なし" is not in STAFF_MEMBERS list.
+            // If it is, merging arrays would be needed, but it's typically an edge case.
+            salesByStaff[noStaffIndex].categories = categories;
+            salesByStaff[noStaffIndex].visits = [...salesByStaff[noStaffIndex].visits, ...noStaffVisits];
+        } else {
+            salesByStaff.push({ name: "指名なし", value: noStaffTotal, categories, visits: noStaffVisits });
+        }
+    }
+
+    const filteredSalesByStaff = salesByStaff.filter(item => item.value > 0).sort((a, b) => b.value - a.value);
+
+    // If no real data has price yet, we might want to handle it or show 0
+    const totalSales = salesByCategory.reduce((sum, item) => sum + item.value, 0);
 
     return (
-        <div className="flex flex-col min-h-screen pb-20 bg-muted/30">
-            {/* Header */}
-            <header className="sticky top-0 z-40 w-full bg-primary text-primary-foreground border-b border-primary-foreground/20 shadow-md">
-                <div className="flex items-center h-14 px-4 justify-center">
-                    <h1 className="text-lg font-bold">売上レポート (カテゴリ別)</h1>
-                </div>
-            </header>
-
-            <main className="flex-1 p-4 space-y-4">
-                {/* Total Sales Summary */}
-                <div className="bg-card border rounded-2xl p-6 shadow-sm text-center">
-                    <h2 className="text-sm font-medium text-muted-foreground mb-1">今月の総売上</h2>
-                    <div className="text-3xl font-bold text-foreground">
-                        ¥{totalSales.toLocaleString()}
-                    </div>
-                    <div className="text-xs text-primary font-medium mt-2 bg-primary/10 inline-block px-2 py-1 rounded-full">
-                        前月比 +15%
-                    </div>
-                </div>
-
-                {/* Chart Section */}
-                <div className="bg-card border rounded-2xl p-4 shadow-sm">
-                    <h3 className="font-bold border-b pb-2 mb-4 text-foreground">カテゴリ別 売上内訳</h3>
-                    <div className="h-64 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={mockSalesData}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={60}
-                                    outerRadius={80}
-                                    paddingAngle={2}
-                                    dataKey="value"
-                                >
-                                    {mockSalesData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                    ))}
-                                </Pie>
-                                <Tooltip
-                                    formatter={(value: number | undefined) => `¥${(value || 0).toLocaleString()}`}
-                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </div>
-
-                    {/* Legend List */}
-                    <div className="space-y-3 mt-4">
-                        {mockSalesData.map((item, index) => (
-                            <div key={item.name} className="flex items-center justify-between text-sm">
-                                <div className="flex items-center gap-2 overflow-hidden">
-                                    <div
-                                        className="w-3 h-3 rounded-full flex-shrink-0"
-                                        style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                                    />
-                                    <span className="text-muted-foreground truncate">{item.name}</span>
-                                </div>
-                                <div className="font-bold flex-shrink-0">
-                                    ¥{item.value.toLocaleString()}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </main>
-        </div>
+        <ReportsClient
+            salesData={salesByCategory}
+            salesByStaff={filteredSalesByStaff}
+            totalSales={totalSales}
+            currentMonthLabel={currentMonthLabel}
+            currentMonthValue={currentMonthValue}
+            serviceColorMap={serviceColorMap}
+            staffColorMap={staffColorMap}
+        />
     );
 }

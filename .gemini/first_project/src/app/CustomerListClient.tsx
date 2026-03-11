@@ -2,8 +2,8 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Search, Plus, User, ChevronRight } from "lucide-react";
-import { ATTRIBUTE_LABELS, type AttributeLabelCode } from "@/lib/constants";
+import { Search, Plus, User, ChevronRight, ChevronDown, Check } from "lucide-react";
+import type { CustomerLabel } from "@/lib/settings";
 
 type CustomerWithVisits = {
     id: string;
@@ -14,17 +14,42 @@ type CustomerWithVisits = {
     lastVisitDate: string | null;
     visitCount: number;
     attributeLabel: string | null;
+    birthDate: string | null;
 };
+
+function calculateAge(birthDateStr: string | null): number | null {
+    if (!birthDateStr) return null;
+    const birthDate = new Date(birthDateStr);
+    if (isNaN(birthDate.getTime())) return null;
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+    }
+    return age;
+}
 
 type SortType = "newest" | "furigana" | "lastVisit" | "visitCount";
 
 export default function CustomerListClient({
     customers,
+    customerLabels,
 }: {
     customers: CustomerWithVisits[];
+    customerLabels: CustomerLabel[];
 }) {
     const [searchQuery, setSearchQuery] = useState("");
     const [sortType, setSortType] = useState<SortType>("newest");
+    const [isSortOpen, setIsSortOpen] = useState(false);
+
+    // Sort labels for display
+    const sortLabels: Record<SortType, string> = {
+        newest: "登録日順（新しい順）",
+        furigana: "五十音順",
+        lastVisit: "来店日順",
+        visitCount: "来店回数順",
+    };
 
     const filteredAndSorted = useMemo(() => {
         let result = customers;
@@ -94,16 +119,45 @@ export default function CustomerListClient({
                     <span className="text-xs font-medium text-muted-foreground">
                         {searchQuery ? `検索結果: ${filteredAndSorted.length} 件` : `全 ${customers.length} 件`}
                     </span>
-                    <select
-                        className="text-xs bg-transparent text-primary font-medium focus:outline-none cursor-pointer"
-                        value={sortType}
-                        onChange={(e) => setSortType(e.target.value as SortType)}
-                    >
-                        <option value="newest">登録日順（新しい順）</option>
-                        <option value="furigana">五十音順</option>
-                        <option value="lastVisit">来店日順</option>
-                        <option value="visitCount">来店回数順</option>
-                    </select>
+                    {/* Custom Sort Dropdown */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setIsSortOpen(!isSortOpen)}
+                            className="flex items-center gap-1 text-sm bg-primary/5 sm:bg-transparent px-2.5 sm:px-0 py-1.5 sm:py-0 rounded-md sm:rounded-none text-primary font-medium focus:outline-none transition-colors hover:bg-primary/10 sm:hover:bg-transparent active:scale-95 sm:active:scale-100"
+                        >
+                            {sortLabels[sortType]}
+                            <ChevronDown className="w-4 h-4" />
+                        </button>
+
+                        {/* Dropdown Menu */}
+                        {isSortOpen && (
+                            <>
+                                {/* Overlay to close */}
+                                <div
+                                    className="fixed inset-0 z-40"
+                                    onClick={() => setIsSortOpen(false)}
+                                />
+                                {/* Menu */}
+                                <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-border overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                                    {(Object.entries(sortLabels) as [SortType, string][]).map(([key, label]) => (
+                                        <button
+                                            key={key}
+                                            onClick={() => {
+                                                setSortType(key);
+                                                setIsSortOpen(false);
+                                            }}
+                                            className="w-full flex items-center justify-between px-4 py-3.5 text-left text-[15px] sm:text-sm hover:bg-muted transition-colors active:bg-muted/80 border-b border-border/50 last:border-0"
+                                        >
+                                            <span className={sortType === key ? "font-bold text-primary" : "text-foreground"}>
+                                                {label}
+                                            </span>
+                                            {sortType === key && <Check className="w-4 h-4 text-primary" />}
+                                        </button>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+                    </div>
                 </div>
 
                 {filteredAndSorted.length === 0 ? (
@@ -143,11 +197,26 @@ export default function CustomerListClient({
                                 <div className="ml-4 flex-1 overflow-hidden">
                                     <div className="flex items-center gap-2 mb-0.5 text-[10px]">
                                         <div className="text-muted-foreground truncate">{customer.furigana}</div>
-                                        {customer.attributeLabel && ATTRIBUTE_LABELS[customer.attributeLabel as AttributeLabelCode] && (
-                                            <span className={`inline-flex px-1.5 py-0.5 rounded-md text-[10px] font-bold whitespace-nowrap ${ATTRIBUTE_LABELS[customer.attributeLabel as AttributeLabelCode].colorClass}`}>
-                                                {ATTRIBUTE_LABELS[customer.attributeLabel as AttributeLabelCode].label}
-                                            </span>
+                                        {calculateAge(customer.birthDate) !== null && (
+                                            <div className="text-muted-foreground font-medium">
+                                                {calculateAge(customer.birthDate)}歳
+                                            </div>
                                         )}
+                                        {customer.attributeLabel && customerLabels.find(l => l.id === customer.attributeLabel) && (() => {
+                                            const labelInfo = customerLabels.find(l => l.id === customer.attributeLabel);
+                                            return (
+                                                <span
+                                                    className="inline-flex px-2 py-0.5 rounded-md text-[10px] font-bold whitespace-nowrap border"
+                                                    style={{
+                                                        backgroundColor: `${labelInfo?.color}1A`,
+                                                        color: labelInfo?.color,
+                                                        borderColor: `${labelInfo?.color}33`
+                                                    }}
+                                                >
+                                                    {labelInfo?.name}
+                                                </span>
+                                            );
+                                        })()}
                                     </div>
                                     <div className="text-base font-bold text-foreground truncate">{customer.name} 様</div>
                                     <div className="flex gap-3 mt-1.5 text-xs text-muted-foreground">

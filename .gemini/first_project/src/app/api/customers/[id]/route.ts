@@ -74,3 +74,24 @@ export async function PUT(
         );
     }
 }
+
+// DELETE a customer
+export async function DELETE(
+    req: Request,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    const { id } = await params;
+    try {
+        await prisma.customer.delete({
+            where: { id },
+        });
+
+        return NextResponse.json({ success: true });
+    } catch (error) {
+        console.error("Customer delete error:", error);
+        return NextResponse.json(
+            { success: false, error: "削除に失敗しました" },
+            { status: 500 }
+        );
+    }
+}
