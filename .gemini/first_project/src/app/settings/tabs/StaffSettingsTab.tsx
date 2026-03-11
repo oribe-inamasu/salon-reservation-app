@@ -17,7 +17,7 @@ const DEFAULT_COLORS = [
     "bg-orange-500",
     "bg-sky-500",
     "bg-rose-500",
-    "bg-violet-500",
+    "bg-stone-800",
 ];
 
 export default function StaffSettingsTab({
