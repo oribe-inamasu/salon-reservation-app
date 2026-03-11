@@ -470,8 +470,8 @@ export default function CalendarClient({
             {/* Form Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm">
-                    <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden">
-                        <div className="flex items-center justify-between p-4 border-b">
+                    <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl flex flex-col max-h-[90dvh]">
+                        <div className="flex items-center justify-between p-4 border-b flex-shrink-0">
                             <h3 className="font-bold text-stone-700">
                                 {formMode === "create" ? "新規予約の登録" : "予約の編集"}
                             </h3>
@@ -479,13 +479,13 @@ export default function CalendarClient({
                                 <X className="w-5 h-5 text-stone-400" />
                             </button>
                         </div>
-                        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+                        <form onSubmit={handleSubmit} className="p-5 space-y-4 overflow-y-auto">
                             <div>
                                 <label className="block text-xs font-bold text-stone-400 mb-1.5 uppercase tracking-wider">顧客</label>
                                 <select
                                     value={formCustomerId}
                                     onChange={(e) => setFormCustomerId(e.target.value)}
-                                    className="w-full p-3 bg-stone-50 border-stone-200 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/50 outline-none"
+                                    className="w-full p-3 bg-stone-50 text-stone-900 border-stone-200 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/50 outline-none"
                                     required
                                 >
                                     {customers.map(c => (
@@ -501,7 +501,7 @@ export default function CalendarClient({
                                         type="time"
                                         value={formStartTime}
                                         onChange={(e) => setFormStartTime(e.target.value)}
-                                        className="w-full p-3 bg-stone-50 border-stone-200 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/50 outline-none"
+                                        className="w-full p-3 bg-stone-50 text-stone-900 border-stone-200 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/50 outline-none"
                                         required
                                     />
                                 </div>
@@ -511,7 +511,7 @@ export default function CalendarClient({
                                         type="time"
                                         value={formEndTime}
                                         onChange={(e) => setFormEndTime(e.target.value)}
-                                        className="w-full p-3 bg-stone-50 border-stone-200 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/50 outline-none"
+                                        className="w-full p-3 bg-stone-50 text-stone-900 border-stone-200 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/50 outline-none"
                                         required
                                     />
                                 </div>
@@ -523,7 +523,7 @@ export default function CalendarClient({
                                     <select
                                         value={formCategory}
                                         onChange={(e) => setFormCategory(e.target.value)}
-                                        className="w-full p-3 bg-stone-50 border-stone-200 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/50 outline-none"
+                                        className="w-full p-3 bg-stone-50 text-stone-900 border-stone-200 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/50 outline-none"
                                     >
                                         {serviceNames.map(cat => (
                                             <option key={cat} value={cat}>{cat}</option>
@@ -535,7 +535,7 @@ export default function CalendarClient({
                                     <select
                                         value={formStaff}
                                         onChange={(e) => setFormStaff(e.target.value)}
-                                        className="w-full p-3 bg-stone-50 border-stone-200 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/50 outline-none"
+                                        className="w-full p-3 bg-stone-50 text-stone-900 border-stone-200 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/50 outline-none"
                                     >
                                         <option value="">指名なし</option>
                                         {staffNames.map(member => (
@@ -549,7 +549,7 @@ export default function CalendarClient({
                                         type="number"
                                         value={formPrice}
                                         onChange={(e) => setFormPrice(e.target.value)}
-                                        className="w-full p-3 bg-stone-50 border-stone-200 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/50 outline-none"
+                                        className="w-full p-3 bg-stone-50 text-stone-900 border-stone-200 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/50 outline-none"
                                         required
                                     />
                                 </div>
@@ -560,12 +560,12 @@ export default function CalendarClient({
                                 <textarea
                                     value={formMemo}
                                     onChange={(e) => setFormMemo(e.target.value)}
-                                    className="w-full p-3 bg-stone-50 border-stone-200 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/50 outline-none min-h-[80px]"
+                                    className="w-full p-3 bg-stone-50 text-stone-900 border-stone-200 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/50 outline-none min-h-[80px]"
                                     placeholder="特記事項があれば入力"
                                 />
                             </div>
 
-                            <div className="pt-2 flex gap-3">
+                            <div className="pt-2 flex gap-3 flex-shrink-0">
                                 {formMode === "edit" && (
                                     <button
                                         type="button"
