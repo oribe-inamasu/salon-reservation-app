@@ -92,7 +92,7 @@ export default function StaffSettingsTab({
                                         type="text"
                                         value={staff.name}
                                         onChange={(e) => handleChange(staff.id, "name", e.target.value)}
-                                        className="w-full bg-white border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
+                                        className="w-full bg-white text-stone-900 border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
                                         placeholder="スタッフ名"
                                     />
                                 </div>
@@ -100,7 +100,7 @@ export default function StaffSettingsTab({
                                     <select
                                         value={staff.color}
                                         onChange={(e) => handleChange(staff.id, "color", e.target.value)}
-                                        className="bg-white border border-stone-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none min-w-[120px]"
+                                        className="bg-white text-stone-900 border border-stone-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none min-w-[120px]"
                                     >
                                         {DEFAULT_COLORS.map(color => (
                                             <option key={color} value={color}>{color.replace('bg-', '')}</option>

@@ -93,7 +93,7 @@ export default function ClinicSettingsTab({
                             type="text"
                             value={info.name}
                             onChange={(e) => handleChange("name", e.target.value)}
-                            className="w-full p-3 bg-stone-50 border-stone-200 border rounded-xl text-sm focus:ring-2 focus:ring-primary/50 outline-none transition-shadow"
+                            className="w-full p-3 bg-stone-50 text-stone-900 border-stone-200 border rounded-xl text-sm focus:ring-2 focus:ring-primary/50 outline-none transition-shadow"
                             placeholder="例: Salon Karte"
                             required
                         />
@@ -108,7 +108,7 @@ export default function ClinicSettingsTab({
                             type="tel"
                             value={info.phone}
                             onChange={(e) => handleChange("phone", e.target.value)}
-                            className="w-full p-3 bg-stone-50 border-stone-200 border rounded-xl text-sm focus:ring-2 focus:ring-primary/50 outline-none transition-shadow"
+                            className="w-full p-3 bg-stone-50 text-stone-900 border-stone-200 border rounded-xl text-sm focus:ring-2 focus:ring-primary/50 outline-none transition-shadow"
                             placeholder="例: 03-1234-5678"
                         />
                     </div>
@@ -122,7 +122,7 @@ export default function ClinicSettingsTab({
                             value={info.address}
                             onChange={(e) => handleChange("address", e.target.value)}
                             rows={2}
-                            className="w-full p-3 bg-stone-50 border-stone-200 border rounded-xl text-sm focus:ring-2 focus:ring-primary/50 outline-none transition-shadow resize-none"
+                            className="w-full p-3 bg-stone-50 text-stone-900 border-stone-200 border rounded-xl text-sm focus:ring-2 focus:ring-primary/50 outline-none transition-shadow resize-none"
                             placeholder="例: 東京都渋谷区神宮前X-X-X"
                         />
                     </div>
@@ -137,7 +137,7 @@ export default function ClinicSettingsTab({
                                 type="text"
                                 value={info.hours}
                                 onChange={(e) => handleChange("hours", e.target.value)}
-                                className="w-full p-3 bg-stone-50 border-stone-200 border rounded-xl text-sm focus:ring-2 focus:ring-primary/50 outline-none transition-shadow"
+                                className="w-full p-3 bg-stone-50 text-stone-900 border-stone-200 border rounded-xl text-sm focus:ring-2 focus:ring-primary/50 outline-none transition-shadow"
                                 placeholder="例: 10:00 - 20:00"
                             />
                         </div>
@@ -155,8 +155,8 @@ export default function ClinicSettingsTab({
                                             type="button"
                                             onClick={() => handleToggleDay(day.id)}
                                             className={`w-9 h-9 rounded-full text-sm font-bold transition-colors ${isSelected
-                                                    ? "bg-red-500 text-white shadow-sm"
-                                                    : "bg-stone-100 text-stone-500 hover:bg-stone-200"
+                                                ? "bg-red-500 text-white shadow-sm"
+                                                : "bg-stone-100 text-stone-500 hover:bg-stone-200"
                                                 }`}
                                         >
                                             {day.label}
@@ -176,7 +176,7 @@ export default function ClinicSettingsTab({
                             type="url"
                             value={info.website}
                             onChange={(e) => handleChange("website", e.target.value)}
-                            className="w-full p-3 bg-stone-50 border-stone-200 border rounded-xl text-sm focus:ring-2 focus:ring-primary/50 outline-none transition-shadow"
+                            className="w-full p-3 bg-stone-50 text-stone-900 border-stone-200 border rounded-xl text-sm focus:ring-2 focus:ring-primary/50 outline-none transition-shadow"
                             placeholder="例: https://example.com"
                         />
                     </div>

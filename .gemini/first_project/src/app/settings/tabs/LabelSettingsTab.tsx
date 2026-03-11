@@ -99,7 +99,7 @@ export default function LabelSettingsTab({
                                         type="text"
                                         value={label.name}
                                         onChange={(e) => handleChange(label.id, "name", e.target.value)}
-                                        className="w-full bg-white border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
+                                        className="w-full bg-white text-stone-900 border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
                                         placeholder="ラベル名"
                                     />
                                 </div>
