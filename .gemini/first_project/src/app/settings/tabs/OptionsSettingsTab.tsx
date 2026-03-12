@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, Save, Loader2, Check, Clock, JapaneseYen, PlusCircle } from "lucide-react";
+import { Plus, Trash2, Save, Loader2, Check, Clock, JapaneseYen, PlusCircle, ChevronUp, ChevronDown } from "lucide-react";
 import { OptionService } from "@/lib/settings";
 
 export default function OptionsSettingsTab({
@@ -36,6 +36,20 @@ export default function OptionsSettingsTab({
         setOptionList(optionList.filter((o) => o.id !== id));
     };
 
+    const handleMoveUp = (index: number) => {
+        if (index === 0) return;
+        const newList = [...optionList];
+        [newList[index - 1], newList[index]] = [newList[index], newList[index - 1]];
+        setOptionList(newList);
+    };
+
+    const handleMoveDown = (index: number) => {
+        if (index === optionList.length - 1) return;
+        const newList = [...optionList];
+        [newList[index + 1], newList[index]] = [newList[index], newList[index + 1]];
+        setOptionList(newList);
+    };
+
     const handleChange = (id: string, field: keyof OptionService, value: string | number) => {
         setOptionList(optionList.map((o) => (o.id === id ? { ...o, [field]: value } : o)));
     };
@@ -63,22 +77,42 @@ export default function OptionsSettingsTab({
             </div>
 
             <div className="space-y-4">
-                {optionList.map((option) => (
+                {optionList.map((option, index) => (
                     <div key={option.id} className="bg-white rounded-3xl p-5 shadow-sm border border-stone-100 space-y-4">
                         <div className="flex items-center justify-between gap-4">
-                            <div className="flex-1">
-                                <label className="text-xs font-bold text-stone-400 mb-1 block uppercase tracking-wider">項目名</label>
-                                <input
-                                    type="text"
-                                    value={option.name}
-                                    onChange={(e) => handleChange(option.id, "name", e.target.value)}
-                                    className="w-full bg-stone-50 text-stone-900 border border-stone-200 rounded-xl px-4 py-2.5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                                    placeholder="例: 指名料, 初回割引 など"
-                                />
+                            <div className="flex items-center gap-2">
+                                <div className="flex flex-col gap-1">
+                                    <button
+                                        onClick={() => handleMoveUp(index)}
+                                        disabled={index === 0}
+                                        className="p-1 text-stone-300 hover:text-primary disabled:opacity-30 transition-colors"
+                                        title="上に移動"
+                                    >
+                                        <ChevronUp className="w-5 h-5" />
+                                    </button>
+                                    <button
+                                        onClick={() => handleMoveDown(index)}
+                                        disabled={index === optionList.length - 1}
+                                        className="p-1 text-stone-300 hover:text-primary disabled:opacity-30 transition-colors"
+                                        title="下に移動"
+                                    >
+                                        <ChevronDown className="w-5 h-5" />
+                                    </button>
+                                </div>
+                                <div className="flex-1 min-w-[200px]">
+                                    <label className="text-xs font-bold text-stone-400 mb-1 block uppercase tracking-wider">項目名</label>
+                                    <input
+                                        type="text"
+                                        value={option.name}
+                                        onChange={(e) => handleChange(option.id, "name", e.target.value)}
+                                        className="w-full bg-stone-50 text-stone-900 border border-stone-200 rounded-xl px-4 py-2.5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                                        placeholder="例: 指名料, 初回割引 など"
+                                    />
+                                </div>
                             </div>
                             <button
                                 onClick={() => handleRemoveOption(option.id)}
-                                className="mt-5 p-2.5 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                                className="p-2.5 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
                                 title="削除"
                             >
                                 <Trash2 className="w-5 h-5" />
