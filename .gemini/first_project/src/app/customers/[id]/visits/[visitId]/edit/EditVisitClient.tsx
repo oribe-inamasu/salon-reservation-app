@@ -3,8 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Save, Loader2, CheckCircle, Trash2, Clock, JapaneseYen, PlusCircle } from "lucide-react";
+import { ChevronLeft, Save, Loader2, CheckCircle, Trash2, Clock, JapaneseYen, PlusCircle, Check } from "lucide-react";
 import { ServiceCourse, OptionService } from "@/lib/settings";
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+function cn(...inputs: ClassValue[]) {
+    return twMerge(clsx(inputs));
+}
 
 type SerializedVisit = {
     id: string;
@@ -114,6 +120,39 @@ export default function EditVisitClient({
         } catch {
             setError("通信エラーが発生しました");
             setIsDeleting(false);
+        }
+    };
+
+    const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>(() => {
+        return optionServices
+            .filter(opt => visit.treatment_content?.includes(`[${opt.name}]`))
+            .map(opt => opt.id);
+    });
+
+    const toggleOption = (option: OptionService) => {
+        const isSelected = selectedOptionIds.includes(option.id);
+        const newSelected = isSelected
+            ? selectedOptionIds.filter(id => id !== option.id)
+            : [...selectedOptionIds, option.id];
+
+        setSelectedOptionIds(newSelected);
+
+        // Update Price
+        const priceDiff = isSelected ? -option.price : option.price;
+        setPrice(prev => String(Math.max(0, parseInt(prev || "0") + priceDiff)));
+
+        // Update Treatment Content
+        const tag = `[${option.name}]`;
+        if (isSelected) {
+            setTreatmentContent(prev => {
+                const regex = new RegExp(`\\s*\\[${option.name}\\]\\s*`, 'g');
+                return prev.replace(regex, " ").trim();
+            });
+        } else {
+            setTreatmentContent(prev => {
+                if (prev.includes(tag)) return prev;
+                return (prev + (prev ? " " : "") + tag).trim();
+            });
         }
     };
 
@@ -229,18 +268,30 @@ export default function EditVisitClient({
                                 <PlusCircle className="w-3 h-3" /> クイック追加：オプション・割引
                             </label>
                             <div className="flex flex-wrap gap-2 mt-1">
-                                {optionServices.map(option => (
-                                    <button
-                                        key={option.id}
-                                        type="button"
-                                        onClick={() => {
-                                            setPrice(prev => String(parseInt(prev || "0") + option.price));
-                                        }}
-                                        className="px-2 py-1.5 bg-white text-amber-900 border border-amber-200 rounded-lg text-[11px] font-bold hover:bg-amber-100 transition-all"
-                                    >
-                                        {option.name} ({option.price > 0 ? "+" : ""}{option.price.toLocaleString()}円)
-                                    </button>
-                                ))}
+                                {optionServices.map(option => {
+                                    const isSelected = selectedOptionIds.includes(option.id);
+                                    return (
+                                        <button
+                                            key={option.id}
+                                            type="button"
+                                            onClick={() => toggleOption(option)}
+                                            className={cn(
+                                                "px-2 py-1.5 rounded-lg text-[11px] font-bold transition-all shadow-sm border",
+                                                isSelected
+                                                    ? "bg-primary text-primary-foreground border-primary"
+                                                    : "bg-white text-amber-900 border-amber-200 hover:bg-amber-100"
+                                            )}
+                                        >
+                                            <div className="flex items-center gap-1">
+                                                {isSelected && <Check className="w-3 h-3" />}
+                                                <span>{option.name}</span>
+                                                <span className={isSelected ? "opacity-90" : "text-amber-500"}>
+                                                    ({option.price > 0 ? "+" : ""}{option.price.toLocaleString()}円)
+                                                </span>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </div>
                         <div className="space-y-1.5">

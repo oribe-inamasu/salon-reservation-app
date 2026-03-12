@@ -26,10 +26,17 @@ import {
     Calendar as CalendarIcon,
     Trash2,
     PlusCircle,
-    JapaneseYen
+    JapaneseYen,
+    Check
 } from "lucide-react";
 import { deleteBooking, updateBooking, convertToVisit, createBooking } from "./actions";
 import { CheckCircle2 } from "lucide-react";
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+function cn(...inputs: ClassValue[]) {
+    return twMerge(clsx(inputs));
+}
 
 
 
@@ -100,6 +107,7 @@ export default function CalendarClient({
     const [formStaff, setFormStaff] = useState("");
     const [formMemo, setFormMemo] = useState("");
     const [selectedCourseId, setSelectedCourseId] = useState("");
+    const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>([]);
 
     // Calendar logic
     const monthStart = startOfMonth(currentMonth);
@@ -143,6 +151,7 @@ export default function CalendarClient({
         setFormStaff("");
         setFormMemo("");
         setSelectedCourseId("");
+        setSelectedOptionIds([]);
         setIsModalOpen(true);
     };
 
@@ -157,7 +166,52 @@ export default function CalendarClient({
         setFormStaff(booking.staff || "");
         setFormMemo(booking.memo || "");
         setSelectedCourseId(""); // We don't track the course ID in the booking itself currently
+
+        // Set initial options based on memo content
+        const initialOptions = optionServices
+            .filter(opt => booking.memo?.includes(`[${opt.name}]`))
+            .map(opt => opt.id);
+        setSelectedOptionIds(initialOptions);
+
         setIsModalOpen(true);
+    };
+
+    const toggleOption = (option: OptionService) => {
+        const isSelected = selectedOptionIds.includes(option.id);
+        const newSelected = isSelected
+            ? selectedOptionIds.filter(id => id !== option.id)
+            : [...selectedOptionIds, option.id];
+
+        setSelectedOptionIds(newSelected);
+
+        // Update Price
+        const priceDiff = isSelected ? -option.price : option.price;
+        setFormPrice(prev => String(Math.max(0, parseInt(prev || "0") + priceDiff)));
+
+        // Update Time
+        if (option.duration !== 0) {
+            const timeDiff = isSelected ? -option.duration : option.duration;
+            const [h, m] = formEndTime.split(":").map(Number);
+            const time = new Date();
+            time.setHours(h, m, 0, 0);
+            const newTime = new Date(time.getTime() + timeDiff * 60000);
+            setFormEndTime(format(newTime, "HH:mm"));
+        }
+
+        // Update Memo
+        const tag = `[${option.name}]`;
+        if (isSelected) {
+            setFormMemo(prev => {
+                // Remove tag and clean up extra spaces
+                const regex = new RegExp(`\\s*\\[${option.name}\\]\\s*`, 'g');
+                return prev.replace(regex, " ").trim();
+            });
+        } else {
+            setFormMemo(prev => {
+                if (prev.includes(tag)) return prev;
+                return (prev + (prev ? " " : "") + tag).trim();
+            });
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -575,28 +629,32 @@ export default function CalendarClient({
                                         <PlusCircle className="w-3 h-3 text-emerald-500" /> クイック追加：オプション・割引
                                     </label>
                                     <div className="flex flex-wrap gap-2">
-                                        {optionServices.map(option => (
-                                            <button
-                                                key={option.id}
-                                                type="button"
-                                                onClick={() => {
-                                                    setFormPrice(prev => String(parseInt(prev || "0") + option.price));
-
-                                                    if (option.duration !== 0) {
-                                                        const [h, m] = formEndTime.split(":").map(Number);
-                                                        const time = new Date();
-                                                        time.setHours(h, m, 0, 0);
-                                                        const newTime = new Date(time.getTime() + option.duration * 60000);
-                                                        setFormEndTime(format(newTime, "HH:mm"));
-                                                    }
-                                                }}
-                                                className="px-3 py-2 bg-stone-100 text-stone-700 rounded-xl text-xs font-bold hover:bg-emerald-100 hover:text-emerald-700 transition-all border border-stone-200"
-                                            >
-                                                {option.name} ({option.price > 0 ? "+" : ""}{option.price.toLocaleString()}円)
-                                            </button>
-                                        ))}
+                                        {optionServices.map(option => {
+                                            const isSelected = selectedOptionIds.includes(option.id);
+                                            return (
+                                                <button
+                                                    key={option.id}
+                                                    type="button"
+                                                    onClick={() => toggleOption(option)}
+                                                    className={cn(
+                                                        "px-3 py-2 rounded-xl text-xs font-bold transition-all border",
+                                                        isSelected
+                                                            ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                                                            : "bg-stone-100 text-stone-700 border-stone-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200"
+                                                    )}
+                                                >
+                                                    <div className="flex items-center gap-1.5">
+                                                        {isSelected && <Check className="w-3 h-3" />}
+                                                        <span>{option.name}</span>
+                                                        <span className={isSelected ? "text-emerald-100" : "text-stone-400"}>
+                                                            ({option.price > 0 ? "+" : ""}{option.price.toLocaleString()}円)
+                                                        </span>
+                                                    </div>
+                                                </button>
+                                            );
+                                        })}
                                     </div>
-                                    <p className="text-[10px] text-stone-400 mt-2">※クリックすると現在の金額・終了時間に加算されます。</p>
+                                    <p className="text-[10px] text-stone-400 mt-2">※オプションを選択すると金額・終了時間に自動反映され、メモに記録されます。</p>
                                 </div>
                                 <div className="col-span-2">
                                     <label className="block text-xs font-bold text-stone-400 mb-1.5 uppercase tracking-wider">担当スタッフ（任意）</label>
