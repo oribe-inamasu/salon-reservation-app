@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, Save, Loader2, Check, ClipboardList, Clock, JapaneseYen, ChevronUp, ChevronDown } from "lucide-react";
+import { Plus, Trash2, Save, Loader2, Check, Clock, JapaneseYen, GripVertical } from "lucide-react";
 import { ServiceCourse } from "@/lib/settings";
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 
 export default function CourseSettingsTab({
     initialData,
@@ -40,18 +41,14 @@ export default function CourseSettingsTab({
         setCourseList(courseList.filter((c) => c.id !== id));
     };
 
-    const handleMoveUp = (index: number) => {
-        if (index === 0) return;
-        const newList = [...courseList];
-        [newList[index - 1], newList[index]] = [newList[index], newList[index - 1]];
-        setCourseList(newList);
-    };
+    const onDragEnd = (result: DropResult) => {
+        if (!result.destination) return;
 
-    const handleMoveDown = (index: number) => {
-        if (index === courseList.length - 1) return;
-        const newList = [...courseList];
-        [newList[index + 1], newList[index]] = [newList[index], newList[index + 1]];
-        setCourseList(newList);
+        const items = Array.from(courseList);
+        const [reorderedItem] = items.splice(result.source.index, 1);
+        items.splice(result.destination.index, 0, reorderedItem);
+
+        setCourseList(items);
     };
 
     const handleChange = (id: string, field: keyof ServiceCourse, value: string | number) => {
@@ -75,89 +72,100 @@ export default function CourseSettingsTab({
                 <div>
                     <h2 className="text-lg font-bold text-foreground">コース管理</h2>
                     <p className="text-sm text-muted-foreground mt-1">
-                        予約や会計時に選択できる施術コースを設定します。
+                        予約や会計時に選択できる施術コースを設定します。ドラッグして順番を入れ替えられます。
                     </p>
                 </div>
             </div>
 
-            <div className="space-y-4">
-                {courseList.map((course, index) => (
-                    <div key={course.id} className="bg-white rounded-3xl p-5 shadow-sm border border-stone-100 space-y-4">
-                        <div className="flex items-center justify-between gap-4">
-                            <div className="flex items-center gap-2">
-                                <div className="flex flex-col gap-1">
-                                    <button
-                                        onClick={() => handleMoveUp(index)}
-                                        disabled={index === 0}
-                                        className="p-1 text-stone-300 hover:text-primary disabled:opacity-30 transition-colors"
-                                        title="上に移動"
-                                    >
-                                        <ChevronUp className="w-5 h-5" />
-                                    </button>
-                                    <button
-                                        onClick={() => handleMoveDown(index)}
-                                        disabled={index === courseList.length - 1}
-                                        className="p-1 text-stone-300 hover:text-primary disabled:opacity-30 transition-colors"
-                                        title="下に移動"
-                                    >
-                                        <ChevronDown className="w-5 h-5" />
-                                    </button>
-                                </div>
-                                <div className="flex-1 min-w-[200px]">
-                                    <label className="text-xs font-bold text-stone-400 mb-1 block uppercase tracking-wider">コース名</label>
-                                    <input
-                                        type="text"
-                                        value={course.name}
-                                        onChange={(e) => handleChange(course.id, "name", e.target.value)}
-                                        className="w-full bg-stone-50 text-stone-900 border border-stone-200 rounded-xl px-4 py-2.5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                                        placeholder="例: 全身調整 60分"
-                                    />
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => handleRemoveCourse(course.id)}
-                                className="p-2.5 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
-                                title="削除"
-                            >
-                                <Trash2 className="w-5 h-5" />
-                            </button>
-                        </div>
+            <DragDropContext onDragEnd={onDragEnd}>
+                <Droppable droppableId="course-list">
+                    {(provided) => (
+                        <div
+                            {...provided.droppableProps}
+                            ref={provided.innerRef}
+                            className="space-y-4"
+                        >
+                            {courseList.map((course, index) => (
+                                <Draggable key={course.id} draggableId={course.id} index={index}>
+                                    {(provided, snapshot) => (
+                                        <div
+                                            ref={provided.innerRef}
+                                            {...provided.draggableProps}
+                                            className={cn(
+                                                "bg-white rounded-3xl p-5 shadow-sm border border-stone-100 space-y-4 transition-shadow",
+                                                snapshot.isDragging && "shadow-lg ring-2 ring-primary/20 z-50 relative bg-white"
+                                            )}
+                                        >
+                                            <div className="flex items-center justify-between gap-4">
+                                                <div className="flex items-center gap-3 flex-1">
+                                                    <div
+                                                        {...provided.dragHandleProps}
+                                                        className="p-1 text-stone-300 hover:text-stone-500 cursor-grab active:cursor-grabbing transition-colors"
+                                                        title="ドラッグして移動"
+                                                    >
+                                                        <GripVertical className="w-5 h-5" />
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <label className="text-xs font-bold text-stone-400 mb-1 block uppercase tracking-wider">コース名</label>
+                                                        <input
+                                                            type="text"
+                                                            value={course.name}
+                                                            onChange={(e) => handleChange(course.id, "name", e.target.value)}
+                                                            className="w-full bg-stone-50 text-stone-900 border border-stone-200 rounded-xl px-4 py-2.5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-sans"
+                                                            placeholder="例: 全身調整 60分"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => handleRemoveCourse(course.id)}
+                                                    className="p-2.5 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                                                    title="削除"
+                                                >
+                                                    <Trash2 className="w-5 h-5" />
+                                                </button>
+                                            </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1">
-                                <label className="text-xs font-bold text-stone-400 mb-1 block uppercase tracking-wider flex items-center gap-1">
-                                    <Clock className="w-3 h-3" /> 所要時間 (分)
-                                </label>
-                                <input
-                                    type="number"
-                                    value={course.duration}
-                                    onChange={(e) => handleChange(course.id, "duration", parseInt(e.target.value) || 0)}
-                                    className="w-full bg-stone-50 text-stone-900 border border-stone-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                                />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-xs font-bold text-stone-400 mb-1 block uppercase tracking-wider flex items-center gap-1">
-                                    <JapaneseYen className="w-3 h-3" /> 金額 (円)
-                                </label>
-                                <input
-                                    type="number"
-                                    value={course.price}
-                                    onChange={(e) => handleChange(course.id, "price", parseInt(e.target.value) || 0)}
-                                    className="w-full bg-stone-50 text-stone-900 border border-stone-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                                />
-                            </div>
+                                            <div className="grid grid-cols-2 gap-4 ml-8">
+                                                <div className="space-y-1">
+                                                    <label className="text-xs font-bold text-stone-400 mb-1 block uppercase tracking-wider flex items-center gap-1">
+                                                        <Clock className="w-3 h-3" /> 所要時間 (分)
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        value={course.duration}
+                                                        onChange={(e) => handleChange(course.id, "duration", parseInt(e.target.value) || 0)}
+                                                        className="w-full bg-stone-50 text-stone-900 border border-stone-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-sans"
+                                                    />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <label className="text-xs font-bold text-stone-400 mb-1 block uppercase tracking-wider flex items-center gap-1">
+                                                        <JapaneseYen className="w-3 h-3" /> 金額 (円)
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        value={course.price}
+                                                        onChange={(e) => handleChange(course.id, "price", parseInt(e.target.value) || 0)}
+                                                        className="w-full bg-stone-50 text-stone-900 border border-stone-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-sans"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </Draggable>
+                            ))}
+                            {provided.placeholder}
                         </div>
-                    </div>
-                ))}
+                    )}
+                </Droppable>
+            </DragDropContext>
 
-                <button
-                    onClick={handleAddCourse}
-                    className="w-full flex items-center justify-center gap-2 py-4 border-2 border-dashed border-stone-200 text-stone-400 hover:text-primary hover:border-primary/50 hover:bg-primary/5 rounded-3xl transition-all font-bold text-sm"
-                >
-                    <Plus className="w-5 h-5" />
-                    新しいコースを追加
-                </button>
-            </div>
+            <button
+                onClick={handleAddCourse}
+                className="w-full flex items-center justify-center gap-2 py-4 border-2 border-dashed border-stone-200 text-stone-400 hover:text-primary hover:border-primary/50 hover:bg-primary/5 rounded-3xl transition-all font-bold text-sm"
+            >
+                <Plus className="w-5 h-5" />
+                新しいコースを追加
+            </button>
 
             <div className="flex justify-end pt-4">
                 <button
@@ -185,4 +193,8 @@ export default function CourseSettingsTab({
             </div>
         </div>
     );
+}
+
+function cn(...classes: (string | boolean | undefined)[]) {
+    return classes.filter(Boolean).join(" ");
 }
