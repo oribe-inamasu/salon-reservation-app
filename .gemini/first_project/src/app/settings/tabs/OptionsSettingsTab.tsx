@@ -1,9 +1,6 @@
 "use client";
 
 import { useState } from "react";
-"use client";
-
-import { useState } from "react";
 import { Plus, Trash2, Save, Loader2, Check, Clock, JapaneseYen, PlusCircle, GripVertical } from "lucide-react";
 import { OptionService } from "@/lib/settings";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
@@ -99,7 +96,7 @@ export default function OptionsSettingsTab({
                                                 <div className="flex items-center gap-3 flex-1">
                                                     <div
                                                         {...provided.dragHandleProps}
-                                                        className="p-1 text-stone-300 hover:text-stone-500 cursor-grab active:cursor-grabbing transition-colors"
+                                                        className="p-1 text-stone-400 hover:text-stone-500 cursor-grab active:cursor-grabbing transition-colors"
                                                         title="ドラッグして移動"
                                                     >
                                                         <GripVertical className="w-5 h-5" />
@@ -199,68 +196,4 @@ export default function OptionsSettingsTab({
 
 function cn(...classes: (string | boolean | undefined)[]) {
     return classes.filter(Boolean).join(" ");
-}
-
-<div className="grid grid-cols-2 gap-4">
-    <div className="space-y-1">
-        <label className="text-xs font-bold text-stone-400 mb-1 block uppercase tracking-wider flex items-center gap-1">
-            <Clock className="w-3 h-3" /> 加算時間 (分)
-        </label>
-        <input
-            type="number"
-            value={option.duration}
-            onChange={(e) => handleChange(option.id, "duration", parseInt(e.target.value) || 0)}
-            className="w-full bg-stone-50 text-stone-900 border border-stone-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-        />
-    </div>
-    <div className="space-y-1">
-        <label className="text-xs font-bold text-stone-400 mb-1 block uppercase tracking-wider flex items-center gap-1">
-            <JapaneseYen className="w-3 h-3" /> 加算金額 (円)
-        </label>
-        <input
-            type="number"
-            value={option.price}
-            onChange={(e) => handleChange(option.id, "price", parseInt(e.target.value) || 0)}
-            className={`w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all ${option.price < 0 ? 'text-red-600 font-bold' : 'text-stone-900'}`}
-        />
-    </div>
-</div>
-                    </div >
-                ))}
-
-<button
-    onClick={handleAddOption}
-    className="w-full flex items-center justify-center gap-2 py-4 border-2 border-dashed border-stone-200 text-stone-400 hover:text-primary hover:border-primary/50 hover:bg-primary/5 rounded-3xl transition-all font-bold text-sm"
->
-    <PlusCircle className="w-5 h-5" />
-    新しい項目を追加
-</button>
-            </div >
-
-    <div className="flex justify-end pt-4">
-        <button
-            onClick={handleSave}
-            disabled={isSaving}
-            className="flex items-center justify-center gap-2 py-4 px-10 bg-primary text-primary-foreground font-bold rounded-2xl shadow-md hover:shadow-lg active:scale-[0.98] transition-all disabled:opacity-50 min-w-[220px]"
-        >
-            {isSaving ? (
-                <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    保存中...
-                </>
-            ) : saveSuccess ? (
-                <>
-                    <Check className="w-5 h-5" />
-                    保存しました
-                </>
-            ) : (
-                <>
-                    <Save className="w-5 h-5" />
-                    設定を保存
-                </>
-            )}
-        </button>
-    </div>
-        </div >
-    );
 }
