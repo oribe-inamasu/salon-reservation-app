@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, GripVertical, Save, Loader2, Check } from "lucide-react";
+import { Plus, Trash2, GripVertical, Save, Loader2, Check, CalendarDays } from "lucide-react";
 
 export type StaffMember = {
     id: string;
@@ -20,12 +20,26 @@ const DEFAULT_COLORS = [
     "bg-stone-800",
 ];
 
+const DAYS_OF_WEEK = [
+    { id: 1, label: "月" },
+    { id: 2, label: "火" },
+    { id: 3, label: "水" },
+    { id: 4, label: "木" },
+    { id: 5, label: "金" },
+    { id: 6, label: "土" },
+    { id: 0, label: "日" },
+];
+
 export default function StaffSettingsTab({
     initialData,
+    initialClosedDays,
     onSave,
+    onSaveClosedDays,
 }: {
     initialData?: StaffMember[];
+    initialClosedDays?: number[];
     onSave: (data: StaffMember[]) => Promise<boolean>;
+    onSaveClosedDays: (days: number[]) => Promise<boolean>;
 }) {
     // Basic fallback to constant if no data exists in DB yet
     const [staffList, setStaffList] = useState<StaffMember[]>(
@@ -35,6 +49,8 @@ export default function StaffSettingsTab({
             { id: "3", name: "スタッフC", color: "bg-purple-500" },
         ]
     );
+
+    const [closedDays, setClosedDays] = useState<number[]>(initialClosedDays || [3]);
 
     const [isSaving, setIsSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
@@ -56,12 +72,25 @@ export default function StaffSettingsTab({
         setStaffList(staffList.map((s) => (s.id === id ? { ...s, [field]: value } : s)));
     };
 
+    const handleToggleDay = (dayId: number) => {
+        setClosedDays(prev => {
+            const newDays = prev.includes(dayId)
+                ? prev.filter(d => d !== dayId)
+                : [...prev, dayId];
+            return newDays.sort();
+        });
+        setSaveSuccess(false);
+    };
+
     const handleSave = async () => {
         setIsSaving(true);
         setSaveSuccess(false);
-        const success = await onSave(staffList);
+        const [staffSuccess, closedDaysSuccess] = await Promise.all([
+            onSave(staffList),
+            onSaveClosedDays(closedDays)
+        ]);
         setIsSaving(false);
-        if (success) {
+        if (staffSuccess && closedDaysSuccess) {
             setSaveSuccess(true);
             setTimeout(() => setSaveSuccess(false), 2000);
         }
@@ -120,7 +149,6 @@ export default function StaffSettingsTab({
                         </div>
                     ))}
                 </div>
-
                 <div className="p-4 border-t border-stone-100 bg-stone-50">
                     <button
                         onClick={handleAddStaff}
@@ -130,6 +158,34 @@ export default function StaffSettingsTab({
                         スタッフを追加
                     </button>
                 </div>
+            </div>
+
+            <div className="bg-white rounded-3xl p-6 shadow-sm border border-stone-100">
+                <div className="flex items-center gap-2 mb-4">
+                    <CalendarDays className="w-5 h-5 text-stone-400" />
+                    <h3 className="font-bold text-stone-700">定休日（曜日）</h3>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                    {DAYS_OF_WEEK.map((day) => {
+                        const isSelected = closedDays.includes(day.id);
+                        return (
+                            <button
+                                key={day.id}
+                                type="button"
+                                onClick={() => handleToggleDay(day.id)}
+                                className={`w-10 h-10 rounded-full text-sm font-bold transition-all ${isSelected
+                                    ? "bg-red-500 text-white shadow-md scale-110"
+                                    : "bg-stone-100 text-stone-500 hover:bg-stone-200"
+                                    }`}
+                            >
+                                {day.label}
+                            </button>
+                        );
+                    })}
+                </div>
+                <p className="mt-4 text-xs text-stone-400 font-medium">
+                    選択した曜日は予約カレンダー上で休診日として表示されます。
+                </p>
             </div>
 
             <div className="flex justify-end pt-4">
@@ -156,6 +212,6 @@ export default function StaffSettingsTab({
                     )}
                 </button>
             </div>
-        </div>
+        </div >
     );
 }

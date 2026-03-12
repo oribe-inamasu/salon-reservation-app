@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Users, LayoutList, Store, Tags, ChevronLeft } from "lucide-react";
+import { Users, LayoutList, Tags, ChevronLeft, PlusCircle, ClipboardList } from "lucide-react";
 import Link from "next/link";
 import StaffSettingsTab, { StaffMember } from "./tabs/StaffSettingsTab";
 import ServicesSettingsTab, { ServiceCategory } from "./tabs/ServicesSettingsTab";
-import ClinicSettingsTab, { ClinicInfo } from "./tabs/ClinicSettingsTab";
+import CourseSettingsTab from "./tabs/CourseSettingsTab";
+import OptionsSettingsTab from "./tabs/OptionsSettingsTab";
+import { ServiceCourse, OptionService } from "@/lib/settings";
 import LabelSettingsTab, { CustomerLabel } from "./tabs/LabelSettingsTab";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -16,8 +18,9 @@ export default function SettingsClient({ initialSettings }: { initialSettings: R
 
     const tabs = [
         { id: "staff", label: "スタッフ", icon: Users },
-        { id: "services", label: "メニュー", icon: LayoutList },
-        { id: "salon", label: "サロン情報", icon: Store },
+        { id: "services", label: "メニュー", icon: ClipboardList },
+        { id: "courses", label: "コース", icon: LayoutList },
+        { id: "options", label: "オプション", icon: PlusCircle },
         { id: "labels", label: "顧客ラベル", icon: Tags },
     ];
 
@@ -83,7 +86,14 @@ export default function SettingsClient({ initialSettings }: { initialSettings: R
                 {activeTab === "staff" && (
                     <StaffSettingsTab
                         initialData={settings.staff_members as StaffMember[]}
+                        initialClosedDays={settings.clinic_info?.closedDays as number[]}
                         onSave={(data: StaffMember[]) => handleSaveSettings({ staff_members: data })}
+                        onSaveClosedDays={(days: number[]) => handleSaveSettings({
+                            clinic_info: {
+                                ...settings.clinic_info,
+                                closedDays: days
+                            }
+                        })}
                     />
                 )}
                 {activeTab === "services" && (
@@ -92,10 +102,16 @@ export default function SettingsClient({ initialSettings }: { initialSettings: R
                         onSave={(data: ServiceCategory[]) => handleSaveSettings({ service_categories: data })}
                     />
                 )}
-                {activeTab === "salon" && (
-                    <ClinicSettingsTab
-                        initialData={settings.clinic_info as ClinicInfo}
-                        onSave={(data) => handleSaveSettings({ clinic_info: data })}
+                {activeTab === "courses" && (
+                    <CourseSettingsTab
+                        initialData={settings.service_courses as ServiceCourse[]}
+                        onSave={(data) => handleSaveSettings({ service_courses: data })}
+                    />
+                )}
+                {activeTab === "options" && (
+                    <OptionsSettingsTab
+                        initialData={settings.option_services as OptionService[]}
+                        onSave={(data) => handleSaveSettings({ option_services: data })}
                     />
                 )}
                 {activeTab === "labels" && (

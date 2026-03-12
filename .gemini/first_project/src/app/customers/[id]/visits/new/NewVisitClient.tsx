@@ -3,16 +3,21 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Save, Loader2, CheckCircle } from "lucide-react";
+import { ChevronLeft, Save, Loader2, CheckCircle, Clock, JapaneseYen, PlusCircle } from "lucide-react";
+import { ServiceCourse, OptionService } from "@/lib/settings";
 
 export default function NewVisitClient({
     params,
     serviceNames,
     staffNames,
+    serviceCourses,
+    optionServices,
 }: {
     params: Promise<{ id: string }>;
     serviceNames: string[];
     staffNames: string[];
+    serviceCourses: ServiceCourse[];
+    optionServices: OptionService[];
 }) {
     const router = useRouter();
     const [customerId, setCustomerId] = useState("");
@@ -30,6 +35,7 @@ export default function NewVisitClient({
     const [price, setPrice] = useState("");
     const [staff, setStaff] = useState("");
     const [staffMemo, setStaffMemo] = useState("");
+    const [selectedCourseId, setSelectedCourseId] = useState("");
 
     useEffect(() => {
         params.then(({ id }) => setCustomerId(id));
@@ -156,6 +162,52 @@ export default function NewVisitClient({
                                 ))}
                             </select>
                         </div>
+
+                        <div className="space-y-1.5 p-3 bg-primary/5 rounded-xl border border-primary/10">
+                            <label className="text-xs font-bold text-primary flex items-center gap-1 uppercase tracking-wider">
+                                <Clock className="w-3 h-3" /> クイック選択：施術コース
+                            </label>
+                            <select
+                                value={selectedCourseId}
+                                onChange={(e) => {
+                                    const courseId = e.target.value;
+                                    setSelectedCourseId(courseId);
+                                    const course = serviceCourses.find(c => c.id === courseId);
+                                    if (course) {
+                                        setTreatmentCategory(course.name);
+                                        setPrice(String(course.price));
+                                    }
+                                }}
+                                className="w-full bg-transparent border-none rounded-lg text-sm font-bold focus:ring-0 outline-none"
+                            >
+                                <option value="">コースを選択して自動入力</option>
+                                {serviceCourses.map(course => (
+                                    <option key={course.id} value={course.id}>
+                                        {course.name} ({course.duration}分 / ¥{course.price.toLocaleString()})
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="space-y-1.5 p-3 bg-amber-50 rounded-xl border border-amber-100">
+                            <label className="text-xs font-bold text-amber-700 flex items-center gap-1 uppercase tracking-wider">
+                                <PlusCircle className="w-3 h-3" /> クイック追加：オプション・割引
+                            </label>
+                            <div className="flex flex-wrap gap-2 mt-1">
+                                {optionServices.map(option => (
+                                    <button
+                                        key={option.id}
+                                        type="button"
+                                        onClick={() => {
+                                            setPrice(prev => String(parseInt(prev || "0") + option.price));
+                                        }}
+                                        className="px-2 py-1.5 bg-white text-amber-900 border border-amber-200 rounded-lg text-[11px] font-bold hover:bg-amber-100 transition-all shadow-sm"
+                                    >
+                                        {option.name} ({option.price > 0 ? "+" : ""}{option.price.toLocaleString()}円)
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                         <div className="space-y-1.5">
                             <label className="text-sm font-medium text-foreground">施術内容の詳細（任意）</label>
                             <input
@@ -238,6 +290,6 @@ export default function NewVisitClient({
                     </button>
                 </form>
             </main>
-        </div>
+        </div >
     );
 }

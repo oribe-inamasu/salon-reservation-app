@@ -33,7 +33,7 @@ export default async function AppointmentsPage() {
         },
     });
 
-    const { serviceNames, staffNames, staffColorMap, customerLabels, clinicInfo } = await getAppSettings();
+    const { serviceNames, staffNames, staffColorMap, customerLabels, clinicInfo, serviceCourses, optionServices } = await getAppSettings();
 
     return (
         <CalendarClient
@@ -44,6 +44,8 @@ export default async function AppointmentsPage() {
             staffColorMap={staffColorMap}
             customerLabels={customerLabels}
             clinicInfo={clinicInfo}
+            serviceCourses={serviceCourses}
+            optionServices={optionServices}
         />
     );
 }

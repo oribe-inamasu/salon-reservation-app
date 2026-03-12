@@ -24,7 +24,9 @@ import {
     User,
     X,
     Calendar as CalendarIcon,
-    Trash2
+    Trash2,
+    PlusCircle,
+    JapaneseYen
 } from "lucide-react";
 import { deleteBooking, updateBooking, convertToVisit, createBooking } from "./actions";
 import { CheckCircle2 } from "lucide-react";
@@ -54,7 +56,7 @@ type CustomerShort = {
     attribute_label: string | null;
 };
 
-import type { CustomerLabel, ClinicInfo } from "@/lib/settings";
+import type { CustomerLabel, ClinicInfo, ServiceCourse, OptionService } from "@/lib/settings";
 
 export default function CalendarClient({
     initialBookings,
@@ -64,6 +66,8 @@ export default function CalendarClient({
     staffColorMap,
     customerLabels,
     clinicInfo,
+    serviceCourses,
+    optionServices,
 }: {
     initialBookings: any[];
     customers: CustomerShort[];
@@ -72,6 +76,8 @@ export default function CalendarClient({
     staffColorMap: Record<string, string>;
     customerLabels: CustomerLabel[];
     clinicInfo: ClinicInfo;
+    serviceCourses: ServiceCourse[];
+    optionServices: OptionService[];
 }) {
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(new Date());
@@ -93,6 +99,7 @@ export default function CalendarClient({
     const [formPrice, setFormPrice] = useState("5000");
     const [formStaff, setFormStaff] = useState("");
     const [formMemo, setFormMemo] = useState("");
+    const [selectedCourseId, setSelectedCourseId] = useState("");
 
     // Calendar logic
     const monthStart = startOfMonth(currentMonth);
@@ -135,6 +142,7 @@ export default function CalendarClient({
         setFormPrice("5000");
         setFormStaff("");
         setFormMemo("");
+        setSelectedCourseId("");
         setIsModalOpen(true);
     };
 
@@ -148,6 +156,7 @@ export default function CalendarClient({
         setFormPrice(String(booking.price || 0));
         setFormStaff(booking.staff || "");
         setFormMemo(booking.memo || "");
+        setSelectedCourseId(""); // We don't track the course ID in the booking itself currently
         setIsModalOpen(true);
     };
 
@@ -525,10 +534,69 @@ export default function CalendarClient({
                                         onChange={(e) => setFormCategory(e.target.value)}
                                         className="w-full p-3 bg-stone-50 text-stone-900 border-stone-200 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/50 outline-none"
                                     >
+                                        <option value="">（コースから選択）</option>
                                         {serviceNames.map(cat => (
                                             <option key={cat} value={cat}>{cat}</option>
                                         ))}
                                     </select>
+                                </div>
+                                <div className="col-span-2">
+                                    <label className="block text-xs font-bold text-stone-400 mb-1.5 uppercase tracking-wider">クイック選択：コース</label>
+                                    <select
+                                        value={selectedCourseId}
+                                        onChange={(e) => {
+                                            const courseId = e.target.value;
+                                            setSelectedCourseId(courseId);
+                                            const course = serviceCourses.find(c => c.id === courseId);
+                                            if (course) {
+                                                setFormCategory(course.name);
+                                                setFormPrice(String(course.price));
+                                                // Update end time
+                                                const [h, m] = formStartTime.split(":").map(Number);
+                                                const startDate = new Date();
+                                                startDate.setHours(h, m, 0, 0);
+                                                const newEndDate = new Date(startDate.getTime() + course.duration * 60000);
+                                                setFormEndTime(format(newEndDate, "HH:mm"));
+                                            }
+                                        }}
+                                        className="w-full p-3 bg-emerald-50 text-emerald-900 border-emerald-200 border rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/50 outline-none"
+                                    >
+                                        <option value="">コースを選択して自動入力</option>
+                                        {serviceCourses.map(course => (
+                                            <option key={course.id} value={course.id}>
+                                                {course.name} ({course.duration}分 / ¥{course.price.toLocaleString()})
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="col-span-2 border-t pt-4">
+                                    <label className="block text-xs font-bold text-stone-400 mb-2 uppercase tracking-wider flex items-center gap-1">
+                                        <PlusCircle className="w-3 h-3 text-emerald-500" /> クイック追加：オプション・割引
+                                    </label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {optionServices.map(option => (
+                                            <button
+                                                key={option.id}
+                                                type="button"
+                                                onClick={() => {
+                                                    setFormPrice(prev => String(parseInt(prev || "0") + option.price));
+
+                                                    if (option.duration !== 0) {
+                                                        const [h, m] = formEndTime.split(":").map(Number);
+                                                        const time = new Date();
+                                                        time.setHours(h, m, 0, 0);
+                                                        const newTime = new Date(time.getTime() + option.duration * 60000);
+                                                        setFormEndTime(format(newTime, "HH:mm"));
+                                                    }
+                                                }}
+                                                className="px-3 py-2 bg-stone-100 text-stone-700 rounded-xl text-xs font-bold hover:bg-emerald-100 hover:text-emerald-700 transition-all border border-stone-200"
+                                            >
+                                                {option.name} ({option.price > 0 ? "+" : ""}{option.price.toLocaleString()}円)
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <p className="text-[10px] text-stone-400 mt-2">※クリックすると現在の金額・終了時間に加算されます。</p>
                                 </div>
                                 <div className="col-span-2">
                                     <label className="block text-xs font-bold text-stone-400 mb-1.5 uppercase tracking-wider">担当スタッフ（任意）</label>
@@ -585,8 +653,9 @@ export default function CalendarClient({
                             </div>
                         </form>
                     </div>
-                </div>
-            )}
-        </div>
+                </div >
+            )
+            }
+        </div >
     );
 }

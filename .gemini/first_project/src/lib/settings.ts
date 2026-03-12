@@ -12,6 +12,20 @@ export type ServiceCategory = {
     color: string;
 };
 
+export type ServiceCourse = {
+    id: string;
+    name: string;
+    duration: number; // in minutes
+    price: number;
+};
+
+export type OptionService = {
+    id: string;
+    name: string;
+    duration: number; // in minutes
+    price: number;
+};
+
 const DEFAULT_STAFF: StaffMember[] = [
     { id: "1", name: "院長（スタッフA）", color: "bg-emerald-500" },
     { id: "2", name: "スタッフB", color: "bg-pink-500" },
@@ -26,6 +40,18 @@ const DEFAULT_SERVICES: ServiceCategory[] = [
     { id: "5", name: "ストレッチ", color: "#8b5cf6" },
     { id: "6", name: "カッピング", color: "#06b6d4" },
     { id: "7", name: "物療（電気・超音波など）", color: "#ef4444" },
+];
+
+const DEFAULT_COURSES: ServiceCourse[] = [
+    { id: "c1", name: "総合鍼灸コース 60分", duration: 60, price: 6500 },
+    { id: "c2", name: "美容鍼スタンダード 45分", duration: 45, price: 5500 },
+    { id: "c3", name: "クイックマッサージ 30分", duration: 30, price: 3500 },
+];
+
+const DEFAULT_OPTIONS: OptionService[] = [
+    { id: "o1", name: "指名料", duration: 0, price: 500 },
+    { id: "o2", name: "初回割引", duration: 0, price: -1000 },
+    { id: "o3", name: "延長 10分", duration: 10, price: 1000 },
 ];
 
 export type CustomerLabel = {
@@ -76,6 +102,8 @@ export async function getAppSettings() {
         return {
             staffMembers: (settingsMap.staff_members as StaffMember[]) || DEFAULT_STAFF,
             serviceCategories: (settingsMap.service_categories as ServiceCategory[]) || DEFAULT_SERVICES,
+            serviceCourses: (settingsMap.service_courses as ServiceCourse[]) || DEFAULT_COURSES,
+            optionServices: (settingsMap.option_services as OptionService[]) || DEFAULT_OPTIONS,
             // Maps for easy lookup
             staffColorMap: ((settingsMap.staff_members as StaffMember[]) || DEFAULT_STAFF).reduce((acc, s) => {
                 acc[s.name] = s.color;
@@ -102,6 +130,8 @@ export async function getAppSettings() {
         return {
             staffMembers: DEFAULT_STAFF,
             serviceCategories: DEFAULT_SERVICES,
+            serviceCourses: DEFAULT_COURSES,
+            optionServices: DEFAULT_OPTIONS,
             staffColorMap: DEFAULT_STAFF.reduce((acc, s) => {
                 acc[s.name] = s.color;
                 return acc;

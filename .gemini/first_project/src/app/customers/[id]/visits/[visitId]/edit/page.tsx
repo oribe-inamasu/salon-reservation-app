@@ -30,7 +30,7 @@ export default async function EditVisitPage({
         staff: visit.staff,
         staff_memo: visit.staff_memo,
     };
-    const { serviceNames, staffNames } = await getAppSettings();
+    const { serviceNames, staffNames, serviceCourses, optionServices } = await getAppSettings();
 
-    return <EditVisitClient visit={serializedVisit} serviceNames={serviceNames} staffNames={staffNames} />;
+    return <EditVisitClient visit={serializedVisit} serviceNames={serviceNames} staffNames={staffNames} serviceCourses={serviceCourses} optionServices={optionServices} />;
 }
