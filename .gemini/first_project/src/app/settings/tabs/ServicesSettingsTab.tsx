@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Plus, Trash2, GripVertical, Save, Loader2, Check } from "lucide-react";
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 
 export type ServiceCategory = {
     id: string;
@@ -57,6 +58,16 @@ export default function ServicesSettingsTab({
         setServiceList(serviceList.filter((s) => s.id !== id));
     };
 
+    const onDragEnd = (result: DropResult) => {
+        if (!result.destination) return;
+
+        const items = Array.from(serviceList);
+        const [reorderedItem] = items.splice(result.source.index, 1);
+        items.splice(result.destination.index, 0, reorderedItem);
+
+        setServiceList(items);
+    };
+
     const handleChange = (id: string, field: keyof ServiceCategory, value: string) => {
         setServiceList(serviceList.map((s) => (s.id === id ? { ...s, [field]: value } : s)));
     };
@@ -78,50 +89,76 @@ export default function ServicesSettingsTab({
                 <div>
                     <h2 className="text-lg font-bold text-foreground">施術メニュー管理</h2>
                     <p className="text-sm text-muted-foreground mt-1">
-                        カルテで選択できる施術内容や、売上レポートで集計されるメニュー項目を設定します。
+                        カルテで選択できる施術内容や、売上レポートで集計されるメニュー項目を設定します。ドラッグして順番を入れ替えられます。
                     </p>
                 </div>
             </div>
 
             <div className="bg-white rounded-3xl shadow-sm border border-stone-100 overflow-hidden text-sm">
-                <div className="p-4 space-y-3">
-                    {serviceList.map((service, index) => (
-                        <div key={service.id} className="flex items-center gap-3 p-3 bg-muted/40 rounded-xl border border-stone-100 group">
-                            <div className="cursor-grab text-muted-foreground/30 hover:text-muted-foreground transition-colors hidden sm:block">
-                                <GripVertical className="w-5 h-5" />
-                            </div>
-
-                            <div className="flex-1 flex flex-col sm:flex-row gap-3">
-                                <div className="flex-1">
-                                    <input
-                                        type="text"
-                                        value={service.name}
-                                        onChange={(e) => handleChange(service.id, "name", e.target.value)}
-                                        className="w-full bg-white text-stone-900 border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
-                                        placeholder="施術メニュー名"
-                                    />
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <input
-                                        type="color"
-                                        value={service.color}
-                                        onChange={(e) => handleChange(service.id, "color", e.target.value)}
-                                        className="w-10 h-10 p-0 border-0 rounded-lg cursor-pointer bg-transparent"
-                                        title="テーマカラーを選択"
-                                    />
-                                </div>
-                            </div>
-
-                            <button
-                                onClick={() => handleRemoveService(service.id)}
-                                className="p-2 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
-                                title="削除"
+                <DragDropContext onDragEnd={onDragEnd}>
+                    <Droppable droppableId="service-list">
+                        {(provided) => (
+                            <div
+                                {...provided.droppableProps}
+                                ref={provided.innerRef}
+                                className="p-4 space-y-3"
                             >
-                                <Trash2 className="w-4 h-4" />
-                            </button>
-                        </div>
-                    ))}
-                </div>
+                                {serviceList.map((service, index) => (
+                                    <Draggable key={service.id} draggableId={service.id} index={index}>
+                                        {(provided, snapshot) => (
+                                            <div
+                                                ref={provided.innerRef}
+                                                {...provided.draggableProps}
+                                                className={cn(
+                                                    "flex items-center gap-3 p-3 bg-white rounded-xl border border-stone-100 group transition-shadow shadow-sm",
+                                                    snapshot.isDragging && "shadow-lg ring-2 ring-primary/20 z-50 relative"
+                                                )}
+                                            >
+                                                <div
+                                                    {...provided.dragHandleProps}
+                                                    className="p-1 text-stone-300 hover:text-stone-500 cursor-grab active:cursor-grabbing transition-colors"
+                                                    title="ドラッグして移動"
+                                                >
+                                                    <GripVertical className="w-5 h-5" />
+                                                </div>
+
+                                                <div className="flex-1 flex flex-col sm:flex-row gap-3">
+                                                    <div className="flex-1">
+                                                        <input
+                                                            type="text"
+                                                            value={service.name}
+                                                            onChange={(e) => handleChange(service.id, "name", e.target.value)}
+                                                            className="w-full bg-stone-50 text-stone-900 border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow font-sans"
+                                                            placeholder="施術メニュー名"
+                                                        />
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <input
+                                                            type="color"
+                                                            value={service.color}
+                                                            onChange={(e) => handleChange(service.id, "color", e.target.value)}
+                                                            className="w-10 h-10 p-0 border-0 rounded-lg cursor-pointer bg-transparent"
+                                                            title="テーマカラーを選択"
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <button
+                                                    onClick={() => handleRemoveService(service.id)}
+                                                    className="p-2 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
+                                                    title="削除"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </Draggable>
+                                ))}
+                                {provided.placeholder}
+                            </div>
+                        )}
+                    </Droppable>
+                </DragDropContext>
 
                 <div className="p-4 border-t border-stone-100 bg-stone-50">
                     <button
@@ -160,4 +197,8 @@ export default function ServicesSettingsTab({
             </div>
         </div>
     );
+}
+
+function cn(...classes: (string | boolean | undefined)[]) {
+    return classes.filter(Boolean).join(" ");
 }

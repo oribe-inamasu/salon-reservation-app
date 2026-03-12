@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Plus, Trash2, GripVertical, Save, Loader2, Check, CalendarDays } from "lucide-react";
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 
 export type StaffMember = {
     id: string;
@@ -68,6 +69,16 @@ export default function StaffSettingsTab({
         setStaffList(staffList.filter((s) => s.id !== id));
     };
 
+    const onDragEnd = (result: DropResult) => {
+        if (!result.destination) return;
+
+        const items = Array.from(staffList);
+        const [reorderedItem] = items.splice(result.source.index, 1);
+        items.splice(result.destination.index, 0, reorderedItem);
+
+        setStaffList(items);
+    };
+
     const handleChange = (id: string, field: keyof StaffMember, value: string) => {
         setStaffList(staffList.map((s) => (s.id === id ? { ...s, [field]: value } : s)));
     };
@@ -102,53 +113,79 @@ export default function StaffSettingsTab({
                 <div>
                     <h2 className="text-lg font-bold text-foreground">スタッフ管理</h2>
                     <p className="text-sm text-muted-foreground mt-1">
-                        予約やカルテの担当者として選択できるスタッフを設定します。
+                        予約やカルテの担当者として選択できるスタッフを設定します。ドラッグして順番を入れ替えられます。
                     </p>
                 </div>
             </div>
 
             <div className="bg-white rounded-3xl shadow-sm border border-stone-100 overflow-hidden text-sm">
-                <div className="p-4 space-y-3">
-                    {staffList.map((staff, index) => (
-                        <div key={staff.id} className="flex items-center gap-3 p-3 bg-muted/40 rounded-xl border border-stone-100 group">
-                            <div className="cursor-grab text-muted-foreground/30 hover:text-muted-foreground transition-colors hidden sm:block">
-                                <GripVertical className="w-5 h-5" />
-                            </div>
-
-                            <div className="flex-1 flex flex-col sm:flex-row gap-3">
-                                <div className="flex-1">
-                                    <input
-                                        type="text"
-                                        value={staff.name}
-                                        onChange={(e) => handleChange(staff.id, "name", e.target.value)}
-                                        className="w-full bg-white text-stone-900 border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
-                                        placeholder="スタッフ名"
-                                    />
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <select
-                                        value={staff.color}
-                                        onChange={(e) => handleChange(staff.id, "color", e.target.value)}
-                                        className="bg-white text-stone-900 border border-stone-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none min-w-[120px]"
-                                    >
-                                        {DEFAULT_COLORS.map(color => (
-                                            <option key={color} value={color}>{color.replace('bg-', '')}</option>
-                                        ))}
-                                    </select>
-                                    <div className={`w-8 h-8 rounded-full ${staff.color} border-2 border-white shadow-sm flex-shrink-0`} />
-                                </div>
-                            </div>
-
-                            <button
-                                onClick={() => handleRemoveStaff(staff.id)}
-                                className="p-2 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
-                                title="削除"
+                <DragDropContext onDragEnd={onDragEnd}>
+                    <Droppable droppableId="staff-list">
+                        {(provided) => (
+                            <div
+                                {...provided.droppableProps}
+                                ref={provided.innerRef}
+                                className="p-4 space-y-3"
                             >
-                                <Trash2 className="w-4 h-4" />
-                            </button>
-                        </div>
-                    ))}
-                </div>
+                                {staffList.map((staff, index) => (
+                                    <Draggable key={staff.id} draggableId={staff.id} index={index}>
+                                        {(provided, snapshot) => (
+                                            <div
+                                                ref={provided.innerRef}
+                                                {...provided.draggableProps}
+                                                className={cn(
+                                                    "flex items-center gap-3 p-3 bg-white rounded-xl border border-stone-100 group transition-shadow shadow-sm",
+                                                    snapshot.isDragging && "shadow-lg ring-2 ring-primary/20 z-50 relative"
+                                                )}
+                                            >
+                                                <div
+                                                    {...provided.dragHandleProps}
+                                                    className="p-1 text-stone-300 hover:text-stone-500 cursor-grab active:cursor-grabbing transition-colors"
+                                                    title="ドラッグして移動"
+                                                >
+                                                    <GripVertical className="w-5 h-5" />
+                                                </div>
+
+                                                <div className="flex-1 flex flex-col sm:flex-row gap-3">
+                                                    <div className="flex-1">
+                                                        <input
+                                                            type="text"
+                                                            value={staff.name}
+                                                            onChange={(e) => handleChange(staff.id, "name", e.target.value)}
+                                                            className="w-full bg-stone-50 text-stone-900 border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow font-sans"
+                                                            placeholder="スタッフ名"
+                                                        />
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <select
+                                                            value={staff.color}
+                                                            onChange={(e) => handleChange(staff.id, "color", e.target.value)}
+                                                            className="bg-stone-50 text-stone-900 border border-stone-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none min-w-[120px] font-sans"
+                                                        >
+                                                            {DEFAULT_COLORS.map(color => (
+                                                                <option key={color} value={color}>{color.replace('bg-', '')}</option>
+                                                            ))}
+                                                        </select>
+                                                        <div className={`w-8 h-8 rounded-full ${staff.color} border-2 border-white shadow-sm flex-shrink-0`} />
+                                                    </div>
+                                                </div>
+
+                                                <button
+                                                    onClick={() => handleRemoveStaff(staff.id)}
+                                                    className="p-2 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
+                                                    title="削除"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </Draggable>
+                                ))}
+                                {provided.placeholder}
+                            </div>
+                        )}
+                    </Droppable>
+                </DragDropContext>
                 <div className="p-4 border-t border-stone-100 bg-stone-50">
                     <button
                         onClick={handleAddStaff}
@@ -212,6 +249,10 @@ export default function StaffSettingsTab({
                     )}
                 </button>
             </div>
-        </div >
+        </div>
     );
+}
+
+function cn(...classes: (string | boolean | undefined)[]) {
+    return classes.filter(Boolean).join(" ");
 }

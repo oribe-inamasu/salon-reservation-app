@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Plus, Trash2, GripVertical, Save, Loader2, Check } from "lucide-react";
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 
 export type CustomerLabel = {
     id: string;
@@ -59,6 +60,16 @@ export default function LabelSettingsTab({
         setLabelList(labelList.filter((l) => l.id !== id));
     };
 
+    const onDragEnd = (result: DropResult) => {
+        if (!result.destination) return;
+
+        const items = Array.from(labelList);
+        const [reorderedItem] = items.splice(result.source.index, 1);
+        items.splice(result.destination.index, 0, reorderedItem);
+
+        setLabelList(items);
+    };
+
     const handleChange = (id: string, field: keyof CustomerLabel, value: string) => {
         setLabelList(labelList.map((l) => (l.id === id ? { ...l, [field]: value } : l)));
     };
@@ -80,50 +91,76 @@ export default function LabelSettingsTab({
                 <div>
                     <h2 className="text-lg font-bold text-foreground">顧客属性ラベル管理</h2>
                     <p className="text-sm text-muted-foreground mt-1">
-                        顧客に設定できる属性ラベル（年代・性別・VIPなど）を追加・変更できます。
+                        顧客に設定できる属性ラベル（年代・性別・VIPなど）を追加・変更できます。ドラッグして順番を入れ替えられます。
                     </p>
                 </div>
             </div>
 
             <div className="bg-white rounded-3xl shadow-sm border border-stone-100 overflow-hidden text-sm">
-                <div className="p-4 space-y-3">
-                    {labelList.map((label, index) => (
-                        <div key={label.id} className="flex items-center gap-3 p-3 bg-muted/40 rounded-xl border border-stone-100 group">
-                            <div className="cursor-grab text-muted-foreground/30 hover:text-muted-foreground transition-colors hidden sm:block">
-                                <GripVertical className="w-5 h-5" />
-                            </div>
-
-                            <div className="flex-1 flex flex-col sm:flex-row gap-3">
-                                <div className="flex-1">
-                                    <input
-                                        type="text"
-                                        value={label.name}
-                                        onChange={(e) => handleChange(label.id, "name", e.target.value)}
-                                        className="w-full bg-white text-stone-900 border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
-                                        placeholder="ラベル名"
-                                    />
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <input
-                                        type="color"
-                                        value={label.color}
-                                        onChange={(e) => handleChange(label.id, "color", e.target.value)}
-                                        className="w-10 h-10 p-0 border-0 rounded-lg cursor-pointer bg-transparent"
-                                        title="テーマカラーを選択"
-                                    />
-                                </div>
-                            </div>
-
-                            <button
-                                onClick={() => handleRemoveLabel(label.id)}
-                                className="p-2 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
-                                title="削除"
+                <DragDropContext onDragEnd={onDragEnd}>
+                    <Droppable droppableId="label-list">
+                        {(provided) => (
+                            <div
+                                {...provided.droppableProps}
+                                ref={provided.innerRef}
+                                className="p-4 space-y-3"
                             >
-                                <Trash2 className="w-4 h-4" />
-                            </button>
-                        </div>
-                    ))}
-                </div>
+                                {labelList.map((label, index) => (
+                                    <Draggable key={label.id} draggableId={label.id} index={index}>
+                                        {(provided, snapshot) => (
+                                            <div
+                                                ref={provided.innerRef}
+                                                {...provided.draggableProps}
+                                                className={cn(
+                                                    "flex items-center gap-3 p-3 bg-white rounded-xl border border-stone-100 group transition-shadow shadow-sm",
+                                                    snapshot.isDragging && "shadow-lg ring-2 ring-primary/20 z-50 relative"
+                                                )}
+                                            >
+                                                <div
+                                                    {...provided.dragHandleProps}
+                                                    className="p-1 text-stone-300 hover:text-stone-500 cursor-grab active:cursor-grabbing transition-colors"
+                                                    title="ドラッグして移動"
+                                                >
+                                                    <GripVertical className="w-5 h-5" />
+                                                </div>
+
+                                                <div className="flex-1 flex flex-col sm:flex-row gap-3">
+                                                    <div className="flex-1">
+                                                        <input
+                                                            type="text"
+                                                            value={label.name}
+                                                            onChange={(e) => handleChange(label.id, "name", e.target.value)}
+                                                            className="w-full bg-stone-50 text-stone-900 border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow font-sans"
+                                                            placeholder="ラベル名"
+                                                        />
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <input
+                                                            type="color"
+                                                            value={label.color}
+                                                            onChange={(e) => handleChange(label.id, "color", e.target.value)}
+                                                            className="w-10 h-10 p-0 border-0 rounded-lg cursor-pointer bg-transparent"
+                                                            title="テーマカラーを選択"
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <button
+                                                    onClick={() => handleRemoveLabel(label.id)}
+                                                    className="p-2 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
+                                                    title="削除"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </Draggable>
+                                ))}
+                                {provided.placeholder}
+                            </div>
+                        )}
+                    </Droppable>
+                </DragDropContext>
 
                 <div className="p-4 border-t border-stone-100 bg-stone-50">
                     <button
@@ -162,4 +199,8 @@ export default function LabelSettingsTab({
             </div>
         </div>
     );
+}
+
+function cn(...classes: (string | boolean | undefined)[]) {
+    return classes.filter(Boolean).join(" ");
 }
