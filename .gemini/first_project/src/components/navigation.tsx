@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Users, Calendar, Settings, FileText, BookOpen } from "lucide-react";
+import { Users, Calendar, Settings, FileText, UserRound } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -14,7 +14,7 @@ export function BottomNav() {
     const pathname = usePathname();
 
     const links = [
-        { href: "/", label: "顧客", icon: BookOpen },
+        { href: "/", label: "顧客", icon: UserRound },
         { href: "/appointments", label: "カレンダー", icon: Calendar },
         { href: "/reports", label: "売上", icon: FileText },
         { href: "/settings", label: "設定", icon: Settings },
