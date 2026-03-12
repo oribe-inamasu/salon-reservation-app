@@ -253,7 +253,7 @@ export default function EditCustomerClient({
                                         <select
                                             value={formData[field.key] || ""}
                                             onChange={(e) => handleChange(field.key, e.target.value)}
-                                            className="w-full p-3 bg-muted border-none rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
+                                            className="w-full p-3 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 border-none rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
                                         >
                                             <option value="">選択してください</option>
                                             {field.options?.map((opt) => (
@@ -268,7 +268,7 @@ export default function EditCustomerClient({
                                             onChange={(e) => handleChange(field.key, e.target.value)}
                                             placeholder={field.placeholder}
                                             rows={3}
-                                            className="w-full p-3 bg-muted border-none rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow resize-none"
+                                            className="w-full p-3 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 border-none rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow resize-none"
                                         />
                                     ) : (
                                         <input
@@ -276,7 +276,7 @@ export default function EditCustomerClient({
                                             value={formData[field.key] || ""}
                                             onChange={(e) => handleChange(field.key, e.target.value)}
                                             placeholder={field.placeholder}
-                                            className="w-full p-3 bg-muted border-none rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
+                                            className="w-full p-3 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 border-none rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
                                         />
                                     )}
                                 </div>
