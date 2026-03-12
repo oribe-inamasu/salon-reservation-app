@@ -227,31 +227,44 @@ export default function NewVisitClient({
                             <label className="text-xs font-bold text-amber-700 flex items-center gap-1 uppercase tracking-wider">
                                 <PlusCircle className="w-3 h-3" /> クイック追加：オプション・割引
                             </label>
-                            <div className="flex flex-wrap gap-2 mt-1">
-                                {optionServices.map(option => {
-                                    const isSelected = selectedOptionIds.includes(option.id);
-                                    return (
-                                        <button
-                                            key={option.id}
-                                            type="button"
-                                            onClick={() => toggleOption(option)}
-                                            className={cn(
-                                                "px-2 py-1.5 rounded-lg text-[11px] font-bold transition-all shadow-sm border",
-                                                isSelected
-                                                    ? "bg-primary text-primary-foreground border-primary"
-                                                    : "bg-white text-amber-900 border-amber-200 hover:bg-amber-100"
-                                            )}
-                                        >
-                                            <div className="flex items-center gap-1">
-                                                {isSelected && <Check className="w-3 h-3" />}
-                                                <span>{option.name}</span>
-                                                <span className={isSelected ? "opacity-90" : "text-amber-500"}>
-                                                    ({option.price > 0 ? "+" : ""}{option.price.toLocaleString()}円)
-                                                </span>
-                                            </div>
-                                        </button>
-                                    );
-                                })}
+                            <div className="space-y-3 mt-1">
+                                <select
+                                    value=""
+                                    onChange={(e) => {
+                                        const optionId = e.target.value;
+                                        const option = optionServices.find(o => o.id === optionId);
+                                        if (option) toggleOption(option);
+                                    }}
+                                    className="w-full bg-white border border-amber-200 rounded-lg text-sm font-bold focus:ring-2 focus:ring-amber-500/50 outline-none p-2"
+                                >
+                                    <option value="">オプション・割引を選択</option>
+                                    {optionServices.map(option => (
+                                        <option key={option.id} value={option.id}>
+                                            {selectedOptionIds.includes(option.id) ? "✓ " : ""}{option.name} ({option.price > 0 ? "+" : ""}{option.price.toLocaleString()}円)
+                                        </option>
+                                    ))}
+                                </select>
+
+                                {selectedOptionIds.length > 0 && (
+                                    <div className="flex flex-wrap gap-2">
+                                        {selectedOptionIds.map(id => {
+                                            const option = optionServices.find(o => o.id === id);
+                                            if (!option) return null;
+                                            return (
+                                                <button
+                                                    key={id}
+                                                    type="button"
+                                                    onClick={() => toggleOption(option)}
+                                                    className="flex items-center gap-1 px-2 py-1.5 bg-primary text-primary-foreground rounded-lg text-[11px] font-bold shadow-sm hover:opacity-90 transition-opacity"
+                                                >
+                                                    <Check className="w-3 h-3" />
+                                                    {option.name}
+                                                    <span className="ml-1 opacity-70 text-[9px]">×</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                )}
                             </div>
                         </div>
                         <div className="space-y-1.5">

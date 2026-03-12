@@ -628,33 +628,46 @@ export default function CalendarClient({
                                     <label className="block text-xs font-bold text-stone-400 mb-2 uppercase tracking-wider flex items-center gap-1">
                                         <PlusCircle className="w-3 h-3 text-emerald-500" /> クイック追加：オプション・割引
                                     </label>
-                                    <div className="flex flex-wrap gap-2">
-                                        {optionServices.map(option => {
-                                            const isSelected = selectedOptionIds.includes(option.id);
-                                            return (
-                                                <button
-                                                    key={option.id}
-                                                    type="button"
-                                                    onClick={() => toggleOption(option)}
-                                                    className={cn(
-                                                        "px-3 py-2 rounded-xl text-xs font-bold transition-all border",
-                                                        isSelected
-                                                            ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                                                            : "bg-stone-100 text-stone-700 border-stone-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200"
-                                                    )}
-                                                >
-                                                    <div className="flex items-center gap-1.5">
-                                                        {isSelected && <Check className="w-3 h-3" />}
-                                                        <span>{option.name}</span>
-                                                        <span className={isSelected ? "text-emerald-100" : "text-stone-400"}>
-                                                            ({option.price > 0 ? "+" : ""}{option.price.toLocaleString()}円)
-                                                        </span>
-                                                    </div>
-                                                </button>
-                                            );
-                                        })}
+                                    <div className="space-y-3">
+                                        <select
+                                            value=""
+                                            onChange={(e) => {
+                                                const optionId = e.target.value;
+                                                const option = optionServices.find(o => o.id === optionId);
+                                                if (option) toggleOption(option);
+                                            }}
+                                            className="w-full p-3 bg-stone-50 text-stone-900 border-stone-200 border rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/50 outline-none"
+                                        >
+                                            <option value="">オプション・割引を選択</option>
+                                            {optionServices.map(option => (
+                                                <option key={option.id} value={option.id}>
+                                                    {selectedOptionIds.includes(option.id) ? "✓ " : ""}{option.name} ({option.price > 0 ? "+" : ""}{option.price.toLocaleString()}円)
+                                                </option>
+                                            ))}
+                                        </select>
+
+                                        {selectedOptionIds.length > 0 && (
+                                            <div className="flex flex-wrap gap-2">
+                                                {selectedOptionIds.map(id => {
+                                                    const option = optionServices.find(o => o.id === id);
+                                                    if (!option) return null;
+                                                    return (
+                                                        <button
+                                                            key={id}
+                                                            type="button"
+                                                            onClick={() => toggleOption(option)}
+                                                            className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold shadow-sm hover:bg-emerald-700 transition-colors"
+                                                        >
+                                                            <Check className="w-3 h-3" />
+                                                            {option.name}
+                                                            <span className="ml-1 opacity-80 text-[10px]">×</span>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
                                     </div>
-                                    <p className="text-[10px] text-stone-400 mt-2">※オプションを選択すると金額・終了時間に自動反映され、メモに記録されます。</p>
+                                    <p className="text-[10px] text-stone-400 mt-2">※コース選択と同じ方法で選べるようになりました。選択したオプションはタグで表示されます。</p>
                                 </div>
                                 <div className="col-span-2">
                                     <label className="block text-xs font-bold text-stone-400 mb-1.5 uppercase tracking-wider">担当スタッフ（任意）</label>
