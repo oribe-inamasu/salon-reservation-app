@@ -11,6 +11,7 @@ export default async function AppointmentsPage() {
             id: true,
             name: true,
             attribute_label: true,
+            birth_date: true,
         },
         orderBy: {
             furigana: "asc",
