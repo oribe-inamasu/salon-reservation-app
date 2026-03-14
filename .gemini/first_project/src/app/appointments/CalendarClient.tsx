@@ -687,19 +687,6 @@ export default function CalendarClient({
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-stone-400 mb-1.5 uppercase tracking-wider">メニュー</label>
-                                    <select
-                                        value={formCategory}
-                                        onChange={(e) => setFormCategory(e.target.value)}
-                                        className="w-full p-3 bg-stone-50 text-stone-900 border-stone-200 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/50 outline-none"
-                                    >
-                                        <option value="">（コースから選択）</option>
-                                        {serviceNames.map(cat => (
-                                            <option key={cat} value={cat}>{cat}</option>
-                                        ))}
-                                    </select>
-                                </div>
                                 <div className="col-span-2">
                                     <label className="block text-xs font-bold text-stone-400 mb-1.5 uppercase tracking-wider">クイック選択：コース</label>
                                     <select

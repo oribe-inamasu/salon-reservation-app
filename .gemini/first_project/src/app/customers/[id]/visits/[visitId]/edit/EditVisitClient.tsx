@@ -224,19 +224,6 @@ export default function EditVisitClient({
                     {/* Treatment Content */}
                     <div className="bg-card border rounded-2xl p-4 shadow-sm space-y-4">
                         <h3 className="font-bold border-b pb-2 text-primary">施術内容</h3>
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-foreground">施術カテゴリ</label>
-                            <select
-                                value={treatmentCategory}
-                                onChange={(e) => setTreatmentCategory(e.target.value)}
-                                className="w-full p-3 bg-muted border-none rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
-                            >
-                                <option value="">選択してください</option>
-                                {serviceNames.map((cat) => (
-                                    <option key={cat} value={cat}>{cat}</option>
-                                ))}
-                            </select>
-                        </div>
                         <div className="space-y-1.5 p-3 bg-primary/5 rounded-xl border border-primary/10">
                             <label className="text-xs font-bold text-primary flex items-center gap-1 uppercase tracking-wider">
                                 <Clock className="w-3 h-3" /> クイック選択：施術コース
@@ -248,7 +235,7 @@ export default function EditVisitClient({
                                     setSelectedCourseId(courseId);
                                     const course = serviceCourses.find(c => c.id === courseId);
                                     if (course) {
-                                        setTreatmentCategory(course.name);
+                                        setTreatmentCategory(course.category || course.name);
                                         setPrice(String(course.price));
                                     }
                                 }}
