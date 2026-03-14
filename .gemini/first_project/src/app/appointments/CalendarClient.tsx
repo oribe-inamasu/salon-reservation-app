@@ -55,6 +55,7 @@ type BookingWithCustomer = {
     memo: string | null;
     staff: string | null;
     status: string;
+    adjustment_price: number;
 };
 
 type CustomerShort = {
@@ -109,6 +110,7 @@ export default function CalendarClient({
     const [formPrice, setFormPrice] = useState("5000");
     const [formStaff, setFormStaff] = useState("");
     const [formMemo, setFormMemo] = useState("");
+    const [formAdjustment, setFormAdjustment] = useState("0");
     const [selectedCourseId, setSelectedCourseId] = useState("");
     const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>([]);
 
@@ -169,6 +171,7 @@ export default function CalendarClient({
         setFormPrice("5000");
         setFormStaff("");
         setFormMemo("");
+        setFormAdjustment("0");
         setSelectedCourseId("");
         setSelectedOptionIds([]);
         setIsModalOpen(true);
@@ -182,11 +185,15 @@ export default function CalendarClient({
         setFormEndTime(format(booking.end_time, "HH:mm"));
         setFormCategory(booking.treatment_category || serviceNames[0] || "");
         setFormPrice(String(booking.price || 0));
+        setFormAdjustment(String(booking.adjustment_price || 0));
         setFormStaff(booking.staff || "");
         setFormMemo(booking.memo || "");
-        setSelectedCourseId(""); // We don't track the course ID in the booking itself currently
 
-        // Set initial options based on memo content
+        // Set initial course based on treatment category
+        const course = serviceCourses.find(c => c.name === booking.treatment_category || c.category === booking.treatment_category);
+        setSelectedCourseId(course?.id || "");
+
+        // Set initial options based on memo content (tags like [OptionName])
         const initialOptions = optionServices
             .filter(opt => booking.memo?.includes(`[${opt.name}]`))
             .map(opt => opt.id);
@@ -215,21 +222,6 @@ export default function CalendarClient({
             time.setHours(h, m, 0, 0);
             const newTime = new Date(time.getTime() + timeDiff * 60000);
             setFormEndTime(format(newTime, "HH:mm"));
-        }
-
-        // Update Memo
-        const tag = `[${option.name}]`;
-        if (isSelected) {
-            setFormMemo(prev => {
-                // Remove tag and clean up extra spaces
-                const regex = new RegExp(`\\s*\\[${option.name}\\]\\s*`, 'g');
-                return prev.replace(regex, " ").trim();
-            });
-        } else {
-            setFormMemo(prev => {
-                if (prev.includes(tag)) return prev;
-                return (prev + (prev ? " " : "") + tag).trim();
-            });
         }
     };
 
@@ -260,6 +252,7 @@ export default function CalendarClient({
                 end_time: end,
                 treatment_category: formCategory,
                 price: price,
+                adjustment_price: parseInt(formAdjustment) || 0,
                 staff: formStaff || undefined,
                 memo: formMemo,
             });
@@ -274,6 +267,8 @@ export default function CalendarClient({
                 } as unknown as BookingWithCustomer;
                 setBookings([...bookings, newBooking]);
                 setIsModalOpen(false);
+            } else {
+                alert(result.error || "予約の登録に失敗しました");
             }
         } else if (formMode === "edit" && editingId) {
             const result = await updateBooking(editingId, {
@@ -282,6 +277,7 @@ export default function CalendarClient({
                 end_time: end,
                 treatment_category: formCategory,
                 price: price,
+                adjustment_price: parseInt(formAdjustment) || 0,
                 staff: formStaff || undefined,
                 memo: formMemo,
             });
@@ -295,6 +291,8 @@ export default function CalendarClient({
                     customer
                 } as unknown as BookingWithCustomer : b));
                 setIsModalOpen(false);
+            } else {
+                alert(result.error || "予約の更新に失敗しました");
             }
         }
         setIsSubmitting(false);
@@ -686,105 +684,110 @@ export default function CalendarClient({
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="col-span-2">
-                                    <label className="block text-xs font-bold text-stone-400 mb-1.5 uppercase tracking-wider">クイック選択：コース</label>
+                            <div className="col-span-2">
+                                <label className="block text-xs font-bold text-stone-400 mb-1.5 uppercase tracking-wider">担当スタッフ（任意）</label>
+                                <select
+                                    value={formStaff}
+                                    onChange={(e) => setFormStaff(e.target.value)}
+                                    className="w-full p-3 bg-stone-50 text-stone-900 border-stone-200 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/50 outline-none"
+                                >
+                                    <option value="">指名なし</option>
+                                    {staffNames.map(member => (
+                                        <option key={member} value={member}>{member}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="col-span-2">
+                                <label className="block text-xs font-bold text-stone-400 mb-1.5 uppercase tracking-wider">コース</label>
+                                <select
+                                    value={selectedCourseId}
+                                    onChange={(e) => {
+                                        const courseId = e.target.value;
+                                        setSelectedCourseId(courseId);
+                                        const course = serviceCourses.find(c => c.id === courseId);
+                                        if (course) {
+                                            setFormCategory(course.category || course.name);
+                                            setFormPrice(String(course.price));
+                                            // Update end time
+                                            const [h, m] = formStartTime.split(":").map(Number);
+                                            const startDate = new Date();
+                                            startDate.setHours(h, m, 0, 0);
+                                            const newEndDate = new Date(startDate.getTime() + course.duration * 60000);
+                                            setFormEndTime(format(newEndDate, "HH:mm"));
+                                        }
+                                    }}
+                                    className="w-full p-3 bg-emerald-50 text-emerald-900 border-emerald-200 border rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/50 outline-none"
+                                >
+                                    <option value="">コースを選択して自動入力</option>
+                                    {serviceCourses.map(course => (
+                                        <option key={course.id} value={course.id}>
+                                            {course.name} ({course.duration}分 / ¥{course.price.toLocaleString()})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="col-span-2 border-t pt-4">
+                                <label className="block text-xs font-bold text-stone-400 mb-2 uppercase tracking-wider flex items-center gap-1">
+                                    <PlusCircle className="w-3 h-3 text-emerald-500" /> オプション・割引
+                                </label>
+                                <div className="space-y-3">
                                     <select
-                                        value={selectedCourseId}
+                                        value=""
                                         onChange={(e) => {
-                                            const courseId = e.target.value;
-                                            setSelectedCourseId(courseId);
-                                            const course = serviceCourses.find(c => c.id === courseId);
-                                            if (course) {
-                                                setFormCategory(course.category || course.name);
-                                                setFormPrice(String(course.price));
-                                                // Update end time
-                                                const [h, m] = formStartTime.split(":").map(Number);
-                                                const startDate = new Date();
-                                                startDate.setHours(h, m, 0, 0);
-                                                const newEndDate = new Date(startDate.getTime() + course.duration * 60000);
-                                                setFormEndTime(format(newEndDate, "HH:mm"));
-                                            }
+                                            const optionId = e.target.value;
+                                            const option = optionServices.find(o => o.id === optionId);
+                                            if (option) toggleOption(option);
                                         }}
-                                        className="w-full p-3 bg-emerald-50 text-emerald-900 border-emerald-200 border rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/50 outline-none"
+                                        className="w-full p-3 bg-stone-50 text-stone-900 border-stone-200 border rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/50 outline-none"
                                     >
-                                        <option value="">コースを選択して自動入力</option>
-                                        {serviceCourses.map(course => (
-                                            <option key={course.id} value={course.id}>
-                                                {course.name} ({course.duration}分 / ¥{course.price.toLocaleString()})
+                                        <option value="">オプション・割引を選択</option>
+                                        {optionServices.map(option => (
+                                            <option key={option.id} value={option.id}>
+                                                {selectedOptionIds.includes(option.id) ? "✓ " : ""}{option.name} ({option.price > 0 ? "+" : ""}{option.price.toLocaleString()}円)
                                             </option>
                                         ))}
                                     </select>
-                                </div>
 
-                                <div className="col-span-2 border-t pt-4">
-                                    <label className="block text-xs font-bold text-stone-400 mb-2 uppercase tracking-wider flex items-center gap-1">
-                                        <PlusCircle className="w-3 h-3 text-emerald-500" /> クイック追加：オプション・割引
-                                    </label>
-                                    <div className="space-y-3">
-                                        <select
-                                            value=""
-                                            onChange={(e) => {
-                                                const optionId = e.target.value;
-                                                const option = optionServices.find(o => o.id === optionId);
-                                                if (option) toggleOption(option);
-                                            }}
-                                            className="w-full p-3 bg-stone-50 text-stone-900 border-stone-200 border rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/50 outline-none"
-                                        >
-                                            <option value="">オプション・割引を選択</option>
-                                            {optionServices.map(option => (
-                                                <option key={option.id} value={option.id}>
-                                                    {selectedOptionIds.includes(option.id) ? "✓ " : ""}{option.name} ({option.price > 0 ? "+" : ""}{option.price.toLocaleString()}円)
-                                                </option>
-                                            ))}
-                                        </select>
+                                    {selectedOptionIds.length > 0 && (
+                                        <div className="flex flex-wrap gap-2">
+                                            {selectedOptionIds.map(id => {
+                                                const option = optionServices.find(o => o.id === id);
+                                                if (!option) return null;
+                                                return (
+                                                    <button
+                                                        key={id}
+                                                        type="button"
+                                                        onClick={() => toggleOption(option)}
+                                                        className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold shadow-sm hover:bg-emerald-700 transition-colors"
+                                                    >
+                                                        <Check className="w-3 h-3" />
+                                                        {option.name}
+                                                        <span className="ml-1 opacity-80 text-[10px]">×</span>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+                                <p className="text-[10px] text-stone-400 mt-2">※コース選択と同じ方法で選べるようになりました。選択したオプションはタグで表示されます。</p>
+                            </div>
 
-                                        {selectedOptionIds.length > 0 && (
-                                            <div className="flex flex-wrap gap-2">
-                                                {selectedOptionIds.map(id => {
-                                                    const option = optionServices.find(o => o.id === id);
-                                                    if (!option) return null;
-                                                    return (
-                                                        <button
-                                                            key={id}
-                                                            type="button"
-                                                            onClick={() => toggleOption(option)}
-                                                            className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold shadow-sm hover:bg-emerald-700 transition-colors"
-                                                        >
-                                                            <Check className="w-3 h-3" />
-                                                            {option.name}
-                                                            <span className="ml-1 opacity-80 text-[10px]">×</span>
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
-                                    </div>
-                                    <p className="text-[10px] text-stone-400 mt-2">※コース選択と同じ方法で選べるようになりました。選択したオプションはタグで表示されます。</p>
-                                </div>
-                                <div className="col-span-2">
-                                    <label className="block text-xs font-bold text-stone-400 mb-1.5 uppercase tracking-wider">担当スタッフ（任意）</label>
-                                    <select
-                                        value={formStaff}
-                                        onChange={(e) => setFormStaff(e.target.value)}
-                                        className="w-full p-3 bg-stone-50 text-stone-900 border-stone-200 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/50 outline-none"
-                                    >
-                                        <option value="">指名なし</option>
-                                        {staffNames.map(member => (
-                                            <option key={member} value={member}>{member}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-stone-400 mb-1.5 uppercase tracking-wider">施術料金 (¥)</label>
-                                    <input
-                                        type="number"
-                                        value={formPrice}
-                                        onChange={(e) => setFormPrice(e.target.value)}
-                                        className="w-full p-3 bg-stone-50 text-stone-900 border-stone-200 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/50 outline-none"
-                                        required
-                                    />
-                                </div>
+                            <div className="col-span-2">
+                                <label className="block text-xs font-bold text-stone-400 mb-1.5 uppercase tracking-wider">登録外の調整額（例：-500, +1000）</label>
+                                <input
+                                    type="number"
+                                    value={formAdjustment}
+                                    onChange={(e) => {
+                                        const newAdjustment = e.target.value;
+                                        const diff = (parseInt(newAdjustment) || 0) - (parseInt(formAdjustment) || 0);
+                                        setFormAdjustment(newAdjustment);
+                                        setFormPrice(prev => String(Math.max(0, parseInt(prev || "0") + diff)));
+                                    }}
+                                    className="w-full p-3 bg-amber-50 text-amber-900 border-amber-200 border rounded-xl text-sm font-bold focus:ring-2 focus:ring-amber-500/50 outline-none"
+                                    placeholder="0"
+                                />
                             </div>
 
                             <div>
@@ -794,6 +797,17 @@ export default function CalendarClient({
                                     onChange={(e) => setFormMemo(e.target.value)}
                                     className="w-full p-3 bg-stone-50 text-stone-900 border-stone-200 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/50 outline-none min-h-[80px]"
                                     placeholder="特記事項があれば入力"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-stone-400 mb-1.5 uppercase tracking-wider">施術料金 (¥)</label>
+                                <input
+                                    type="number"
+                                    value={formPrice}
+                                    onChange={(e) => setFormPrice(e.target.value)}
+                                    className="w-full p-3 bg-stone-50 text-stone-900 border-stone-200 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/50 outline-none"
+                                    required
                                 />
                             </div>
 

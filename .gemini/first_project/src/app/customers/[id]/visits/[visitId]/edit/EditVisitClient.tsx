@@ -21,6 +21,7 @@ type SerializedVisit = {
     price: number | null;
     staff: string | null;
     staff_memo: string | null;
+    adjustment_price: number;
 };
 
 export default function EditVisitClient({
@@ -53,14 +54,21 @@ export default function EditVisitClient({
     const [visitDate, setVisitDate] = useState(formatDateTimeLocal(visit.visit_date));
     const [treatmentCategory, setTreatmentCategory] = useState(visit.treatment_category || "");
     const [treatmentContent, setTreatmentContent] = useState(visit.treatment_content || "");
-    const [price, setPrice] = useState(visit.price !== null ? String(visit.price) : "");
+    const [price, setPrice] = useState(String(visit.price || 0));
+    const [adjustmentPrice, setAdjustmentPrice] = useState(String(visit.adjustment_price || 0));
     const [staff, setStaff] = useState(visit.staff || "");
     const [staffMemo, setStaffMemo] = useState(visit.staff_memo || "");
-    const [selectedCourseId, setSelectedCourseId] = useState("");
+    const [selectedCourseId, setSelectedCourseId] = useState(() => {
+        const course = serviceCourses.find(c => c.name === visit.treatment_category || c.category === visit.treatment_category);
+        return course?.id || "";
+    });
+
+    const [details, setDetails] = useState<string | null>(null);
 
     const handleSubmit = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
         setError(null);
+        setDetails(null);
 
         if (!visitDate) {
             setError("来店日時は必須です");
@@ -79,6 +87,7 @@ export default function EditVisitClient({
                     price: price,
                     staff: staff,
                     staff_memo: staffMemo,
+                    adjustment_price: adjustmentPrice,
                 }),
             });
 
@@ -91,6 +100,7 @@ export default function EditVisitClient({
                 }, 1000);
             } else {
                 setError(result.error || "保存に失敗しました");
+                if (result.details) setDetails(result.details);
             }
         } catch {
             setError("通信エラーが発生しました");
@@ -140,20 +150,6 @@ export default function EditVisitClient({
         // Update Price
         const priceDiff = isSelected ? -option.price : option.price;
         setPrice(prev => String(Math.max(0, parseInt(prev || "0") + priceDiff)));
-
-        // Update Treatment Content
-        const tag = `[${option.name}]`;
-        if (isSelected) {
-            setTreatmentContent(prev => {
-                const regex = new RegExp(`\\s*\\[${option.name}\\]\\s*`, 'g');
-                return prev.replace(regex, " ").trim();
-            });
-        } else {
-            setTreatmentContent(prev => {
-                if (prev.includes(tag)) return prev;
-                return (prev + (prev ? " " : "") + tag).trim();
-            });
-        }
     };
 
     return (
@@ -201,6 +197,7 @@ export default function EditVisitClient({
                     {error && (
                         <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-sm text-red-700 dark:text-red-400 text-center animate-in fade-in slide-in-from-top-2">
                             {error}
+                            {details && <p className="text-[10px] mt-1 opacity-70 break-all">{details}</p>}
                         </div>
                     )}
 
@@ -219,6 +216,20 @@ export default function EditVisitClient({
                                 className="w-full p-3 bg-muted border-none rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
                             />
                         </div>
+
+                        <div className="space-y-1.5 pt-2 border-t">
+                            <label className="text-sm font-medium text-foreground">担当スタッフ（任意）</label>
+                            <select
+                                value={staff}
+                                onChange={(e) => setStaff(e.target.value)}
+                                className="w-full p-3 bg-muted border-none rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
+                            >
+                                <option value="">指名なし・選択しない</option>
+                                {staffNames.map((member) => (
+                                    <option key={member} value={member}>{member}</option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
 
                     {/* Treatment Content */}
@@ -226,7 +237,7 @@ export default function EditVisitClient({
                         <h3 className="font-bold border-b pb-2 text-primary">施術内容</h3>
                         <div className="space-y-1.5 p-3 bg-primary/5 rounded-xl border border-primary/10">
                             <label className="text-xs font-bold text-primary flex items-center gap-1 uppercase tracking-wider">
-                                <Clock className="w-3 h-3" /> クイック選択：施術コース
+                                <Clock className="w-3 h-3" /> コース
                             </label>
                             <select
                                 value={selectedCourseId}
@@ -239,7 +250,7 @@ export default function EditVisitClient({
                                         setPrice(String(course.price));
                                     }
                                 }}
-                                className="w-full bg-transparent border-none rounded-lg text-sm font-bold focus:ring-0"
+                                className="w-full bg-transparent border-none rounded-lg text-sm font-bold focus:ring-0 outline-none"
                             >
                                 <option value="">コースを選択して自動入力</option>
                                 {serviceCourses.map(course => (
@@ -252,7 +263,7 @@ export default function EditVisitClient({
 
                         <div className="space-y-1.5 p-3 bg-amber-50 rounded-xl border border-amber-100">
                             <label className="text-xs font-bold text-amber-700 flex items-center gap-1 uppercase tracking-wider">
-                                <PlusCircle className="w-3 h-3" /> クイック追加：オプション・割引
+                                <PlusCircle className="w-3 h-3" /> オプション・割引
                             </label>
                             <div className="space-y-3 mt-1">
                                 <select
@@ -294,6 +305,7 @@ export default function EditVisitClient({
                                 )}
                             </div>
                         </div>
+
                         <div className="space-y-1.5">
                             <label className="text-sm font-medium text-foreground">施術内容の詳細（任意）</label>
                             <input
@@ -304,52 +316,57 @@ export default function EditVisitClient({
                                 className="w-full p-3 bg-muted border-none rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
                             />
                         </div>
-                        <div className="space-y-1.5 pt-2 border-t">
-                            <label className="text-sm font-medium text-foreground">担当スタッフ（任意）</label>
-                            <select
-                                value={staff}
-                                onChange={(e) => setStaff(e.target.value)}
-                                className="w-full p-3 bg-muted border-none rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
-                            >
-                                <option value="">指名なし・選択しない</option>
-                                {staffNames.map((member) => (
-                                    <option key={member} value={member}>{member}</option>
-                                ))}
-                            </select>
-                        </div>
                     </div>
 
-                    {/* Price */}
+                    {/* Price & Memo */}
                     <div className="bg-card border rounded-2xl p-4 shadow-sm space-y-4">
-                        <h3 className="font-bold border-b pb-2 text-primary">料金</h3>
+                        <h3 className="font-bold border-b pb-2 text-primary">会計・記録</h3>
                         <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-foreground">料金（円）</label>
-                            <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">¥</span>
-                                <input
-                                    type="number"
-                                    value={price}
-                                    onChange={(e) => setPrice(e.target.value)}
-                                    placeholder="例: 6500"
-                                    className="w-full p-3 pl-8 bg-muted border-none rounded-xl text-sm text-right focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
+                            <label className="text-sm font-medium text-foreground">登録外の調整額（例：-500, +1000）</label>
+                            <input
+                                type="number"
+                                value={adjustmentPrice}
+                                onChange={(e) => {
+                                    const newVal = e.target.value;
+                                    const diff = (parseInt(newVal) || 0) - (parseInt(adjustmentPrice) || 0);
+                                    setAdjustmentPrice(newVal);
+                                    setPrice(prev => String(Math.max(0, parseInt(prev || "0") + diff)));
+                                }}
+                                className="w-full p-3 bg-amber-50 border-amber-200 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-shadow"
+                                placeholder="0"
+                            />
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <label className="text-sm font-medium text-foreground flex items-center justify-between">
+                                <span>🔒 スタッフ用メモ（非公開）</span>
+                                <span className="text-[10px] text-muted-foreground font-normal">※次回への引き継ぎなど</span>
+                            </label>
+                            <div className="bg-amber-50 dark:bg-amber-900/10 p-1 border border-amber-100 dark:border-amber-900/30 rounded-xl">
+                                <textarea
+                                    value={staffMemo}
+                                    onChange={(e) => setStaffMemo(e.target.value)}
+                                    rows={4}
+                                    placeholder="痛みの変化や次回への引き継ぎ事項などを記録"
+                                    className="w-full p-3 bg-transparent border-none focus:outline-none text-sm leading-relaxed resize-none"
                                 />
                             </div>
                         </div>
-                    </div>
 
-                    {/* Staff Memo */}
-                    <div className="bg-card border rounded-2xl p-4 shadow-sm space-y-4">
-                        <h3 className="font-bold border-b pb-2 text-amber-600 dark:text-amber-500">🔒 スタッフ用メモ（非公開）</h3>
-                        <div className="bg-amber-50 dark:bg-amber-900/10 p-1 border border-amber-100 dark:border-amber-900/30 rounded-xl">
-                            <textarea
-                                value={staffMemo}
-                                onChange={(e) => setStaffMemo(e.target.value)}
-                                rows={5}
-                                placeholder="痛みの変化や次回への引き継ぎ事項などを記録"
-                                className="w-full p-3 bg-transparent border-none focus:outline-none text-sm leading-relaxed resize-none"
-                            />
+                        <div className="space-y-1.5 pt-4 border-t">
+                            <label className="text-sm font-bold text-foreground">最終料金（円）</label>
+                            <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">¥</span>
+                                    <input
+                                        type="number"
+                                        value={price}
+                                        onChange={(e) => setPrice(e.target.value)}
+                                        placeholder="例: 6500"
+                                        className="w-full p-3 pl-8 bg-muted border-none rounded-xl text-sm text-right focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow font-bold text-lg"
+                                    />
+                                </div>
+                            </div>
                         </div>
-                    </div>
 
                     {/* Actions */}
                     <div className="flex gap-3 pt-2">

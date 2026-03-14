@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client'
+// Force rebuild after schema change
 import { PrismaPg } from '@prisma/adapter-pg'
 import { Pool } from 'pg'
 

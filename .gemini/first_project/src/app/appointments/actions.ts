@@ -40,22 +40,29 @@ export async function createBooking(data: {
     memo?: string;
     status?: string;
     staff?: string;
+    adjustment_price?: number;
 }) {
     try {
+        console.log("Creating booking with data in action:", data);
         const booking = await prisma.booking.create({
             data: {
-                ...data,
-                price: data.price !== undefined && data.price !== null ? Number(data.price) : null,
+                customerId: data.customerId,
+                start_time: data.start_time,
+                end_time: data.end_time,
+                treatment_category: data.treatment_category || null,
+                price: data.price !== undefined ? parseInt(String(data.price), 10) : null,
+                memo: data.memo || null,
+                status: data.status || "pending",
                 staff: data.staff || null,
-                status: data.status || "scheduled", // Ensure status is handled, default to "scheduled"
+                adjustment_price: data.adjustment_price !== undefined ? parseInt(String(data.adjustment_price), 10) : 0,
             },
-            include: { customer: true },
         });
+        console.log("Booking created successfully:", booking.id);
         revalidatePath("/appointments");
         return { success: true, booking };
-    } catch (error) {
-        console.error("Failed to create booking:", error);
-        return { success: false, error: "予約の作成に失敗しました" };
+    } catch (error: any) {
+        console.error("Failed to create booking in action:", error);
+        return { success: false, error: error.message || "予約の作成に失敗しました" };
     }
 }
 
@@ -68,29 +75,47 @@ export async function updateBooking(id: string, data: {
     memo?: string;
     status?: string;
     staff?: string;
+    adjustment_price?: number;
 }) {
     try {
+        console.log(`[Action: updateBooking] Updating booking ${id} with data:`, data);
+        
+        // Ensure numbers are properly parsed
+        const price = data.price !== undefined ? parseInt(String(data.price), 10) : undefined;
+        const adjustment_price = data.adjustment_price !== undefined ? parseInt(String(data.adjustment_price), 10) : undefined;
+
         // Update the booking
         const booking = await prisma.booking.update({
             where: { id },
             data: {
-                ...data,
-                price: data.price !== undefined && data.price !== null ? Number(data.price) : null,
+                start_time: data.start_time !== undefined ? data.start_time : undefined,
+                end_time: data.end_time !== undefined ? data.end_time : undefined,
+                treatment_category: data.treatment_category !== undefined ? data.treatment_category : undefined,
+                price: price !== undefined ? price : undefined,
+                memo: data.memo !== undefined ? data.memo : undefined,
+                status: data.status !== undefined ? data.status : undefined,
                 staff: data.staff !== undefined ? data.staff : undefined,
+                adjustment_price: adjustment_price !== undefined ? adjustment_price : undefined,
             },
             include: { customer: true },
         });
 
+        console.log(`[Action: updateBooking] Booking updated successfully:`, booking.id);
+
         // Sync to VisitHistory if it exists
         const visit = await prisma.visitHistory.findUnique({ where: { bookingId: id } });
         if (visit) {
+            console.log(`[Action: updateBooking] Syncing to VisitHistory ${visit.id}`);
             await prisma.visitHistory.update({
                 where: { id: visit.id },
                 data: {
                     visit_date: data.start_time,
                     treatment_category: data.treatment_category !== undefined ? data.treatment_category : undefined,
-                    price: data.price !== undefined && data.price !== null ? Number(data.price) : null,
+                    price: price !== undefined ? price : null,
+                    adjustment_price: adjustment_price !== undefined ? adjustment_price : undefined,
                     staff: data.staff !== undefined ? data.staff : undefined,
+                    // If the memo changed, it might affect treatment_content or staff_memo
+                    staff_memo: data.memo !== undefined ? data.memo : undefined,
                 },
             });
         }
@@ -98,11 +123,10 @@ export async function updateBooking(id: string, data: {
         revalidatePath("/appointments");
         return { success: true, booking };
     } catch (error) {
-        console.error("Failed to update booking:", error);
+        console.error("[Action: updateBooking] Error:", error);
         return { success: false, error: "予約の更新に失敗しました" };
     }
 }
-
 
 export async function deleteBooking(id: string) {
     try {
@@ -136,7 +160,8 @@ export async function convertToVisit(bookingId: string, price?: number) {
                 treatment_category: booking.treatment_category !== undefined ? booking.treatment_category : null,
                 price: booking.price !== undefined && booking.price !== null ? booking.price : null,
                 staff: booking.staff !== undefined ? booking.staff : null,
-                bookingId: booking.id, // Keep the connection
+                adjustment_price: (booking as any).adjustment_price || 0,
+                bookingId: booking.id, // Link them
             },
         });
 
@@ -156,4 +181,3 @@ export async function convertToVisit(bookingId: string, price?: number) {
         return { success: false, error: "来店処理に失敗しました" };
     }
 }
-

@@ -43,13 +43,14 @@ model VisitHistory {
   treatment_category String?
   treatment_content  String?
   price              Int?
-  staff              String?
   staff_memo         String?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
-  customer           Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   bookingId          String?  @unique
+  staff              String?
+  adjustment_price   Int      @default(0)
   booking            Booking? @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  customer           Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 }
 
 model Booking {
@@ -59,11 +60,12 @@ model Booking {
   end_time           DateTime
   treatment_category String?
   memo               String?
-  status             String        @default("scheduled") // "scheduled", "completed", "cancelled"
+  status             String        @default("scheduled")
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
   price              Int?
   staff              String?
+  adjustment_price   Int           @default(0)
   customer           Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
   visitHistory       VisitHistory?
 }

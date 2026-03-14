@@ -16,42 +16,52 @@ export async function PUT(
         }
 
         const data = await req.json();
+        console.log(`[API: PUT visit] Updating visit ${visitId} with data:`, data);
 
         if (!data.visit_date) {
             return NextResponse.json({ success: false, error: "来店日時は必須です" }, { status: 400 });
         }
 
+        const price = data.price !== undefined && data.price !== "" ? parseInt(String(data.price), 10) : undefined;
+        const adjustment_price = data.adjustment_price !== undefined && data.adjustment_price !== "" ? parseInt(String(data.adjustment_price), 10) : undefined;
+
+        const visitData: any = {
+            visit_date: data.visit_date ? new Date(data.visit_date) : undefined,
+            treatment_category: data.treatment_category !== undefined ? data.treatment_category : undefined,
+            treatment_content: data.treatment_content !== undefined ? data.treatment_content : undefined,
+            price: price !== undefined ? price : undefined,
+            staff_memo: data.staff_memo !== undefined ? data.staff_memo : undefined,
+            staff: data.staff !== undefined ? data.staff : undefined,
+            adjustment_price: adjustment_price !== undefined ? adjustment_price : undefined,
+        };
+
         const updatedVisit = await prisma.visitHistory.update({
             where: { id: visitId },
-            data: {
-                visit_date: new Date(data.visit_date),
-                treatment_category: data.treatment_category || null,
-                treatment_content: data.treatment_content || null,
-                price: data.price ? parseInt(data.price, 10) : null,
-                staff_memo: data.staff_memo || null,
-                staff: data.staff !== undefined ? data.staff : undefined,
-            },
+            data: visitData,
         });
+
+        console.log(`[API: PUT visit] Visit updated successfully:`, updatedVisit.id);
 
         // If there is an associated booking, update it too
         if (visit.bookingId) {
+            console.log(`[API: PUT visit] Syncing to Booking ${visit.bookingId}`);
             await prisma.booking.update({
                 where: { id: visit.bookingId },
                 data: {
-                    start_time: new Date(data.visit_date),
-                    end_time: new Date(new Date(data.visit_date).getTime() + 60 * 60 * 1000), // Default 1 hour duration
-                    treatment_category: data.treatment_category || null,
-                    price: data.price ? parseInt(data.price, 10) : null,
-                    memo: data.staff_memo || null,
+                    start_time: data.visit_date ? new Date(data.visit_date) : undefined,
+                    treatment_category: data.treatment_category !== undefined ? data.treatment_category : undefined,
+                    price: price !== undefined ? price : null,
+                    memo: data.staff_memo !== undefined ? data.staff_memo : undefined,
                     staff: data.staff !== undefined ? data.staff : undefined,
+                    adjustment_price: adjustment_price !== undefined ? adjustment_price : undefined,
                 }
             });
         }
 
         return NextResponse.json({ success: true, visitId: updatedVisit.id }, { status: 200 });
-    } catch (error) {
-        console.error("Visit update error:", error);
-        return NextResponse.json({ success: false, error: "カルテの更新に失敗しました" }, { status: 500 });
+    } catch (error: any) {
+        console.error("[API: PUT visit] Error:", error);
+        return NextResponse.json({ success: false, error: "カルテの更新に失敗しました", details: error.message }, { status: 500 });
     }
 }
 
