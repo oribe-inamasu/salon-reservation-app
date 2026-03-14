@@ -97,6 +97,7 @@ export default function CalendarClient({
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [viewMode, setViewMode] = useState<"bookings" | "birthdays">("bookings");
+    const [expandedBookingIds, setExpandedBookingIds] = useState<Set<string>>(new Set());
 
     // Form State
     const [formMode, setFormMode] = useState<"create" | "edit">("create");
@@ -310,6 +311,16 @@ export default function CalendarClient({
         setIsSubmitting(false);
     };
 
+    const toggleExpand = (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setExpandedBookingIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
+
     const handleConvertToVisit = async (id: string, price: number) => {
         setIsSubmitting(true);
         const result = await convertToVisit(id, price);
@@ -472,119 +483,101 @@ export default function CalendarClient({
                         ) : (
                             selectedDateBookings.map((booking) => {
                                 const labelInfo = booking.customer.attribute_label ? customerLabels.find(l => l.id === booking.customer.attribute_label) : null;
-                                const hexColor = labelInfo?.color;
-
                                 const staffBgClass = booking.staff ? staffColorMap[booking.staff] : undefined;
+                                const isExpanded = expandedBookingIds.has(booking.id);
 
                                 return (
                                     <div
                                         key={booking.id}
-                                        onClick={() => handleEditClick(booking)}
+                                        onClick={(e) => toggleExpand(booking.id, e)}
                                         className={`flex flex-col hover:bg-stone-50 transition-colors cursor-pointer group relative overflow-hidden border-b border-stone-100 last:border-b-0 ${booking.status === 'completed' ? 'bg-stone-50/50' : ''}`}
                                     >
-                                        {/* Main Card Content */}
-                                        <div className="p-3 sm:p-4 flex gap-3 sm:gap-4 items-stretch">
-                                            {/* 1. Left: Time Column */}
-                                            <div className="w-14 sm:w-16 flex flex-col items-center justify-start py-0.5 sm:py-1 flex-shrink-0 border-r border-stone-100 pr-2 sm:pr-4">
-                                                <div className="text-base sm:text-lg font-bold text-stone-700 leading-none mb-1">
+                                        {/* Compact Card Content */}
+                                        <div className="p-2 sm:p-3 flex gap-3 items-center">
+                                            {/* 1. Time */}
+                                            <div className="w-12 flex-shrink-0 text-center">
+                                                <div className="text-sm font-bold text-stone-700 leading-none">
                                                     {format(booking.start_time, "HH:mm")}
-                                                </div>
-                                                <div className="text-xs sm:text-sm font-semibold text-stone-400 leading-none">
-                                                    {format(booking.end_time, "HH:mm")}
                                                 </div>
                                             </div>
 
-                                            {/* 2. Center: Info Column */}
-                                            <div className="flex-1 flex flex-col justify-start min-w-0 py-0.5">
-                                                {/* Name & Labels */}
-                                                <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                                                    <div className="text-base sm:text-lg font-bold text-stone-800 truncate">
-                                                        {booking.customer.name} 様
-                                                    </div>
-                                                    {/* Customer Attribute Label */}
-                                                    {hexColor && (
-                                                        <div
-                                                            className="px-2 py-0.5 rounded text-[10px] sm:text-xs font-bold whitespace-nowrap"
-                                                            style={{ backgroundColor: `${hexColor}1A`, color: hexColor }}
-                                                        >
-                                                            {labelInfo?.name}
-                                                        </div>
-                                                    )}
+                                            {/* 2. Customer Name & Staff Name */}
+                                            <div className="flex-1 min-w-0 flex items-center gap-2">
+                                                <div className="text-sm font-bold text-stone-800 truncate">
+                                                    {booking.customer.name} 様
                                                 </div>
+                                                {booking.staff && (
+                                                    <span
+                                                        className={`inline-block text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm ${!staffBgClass ? 'bg-stone-100 text-stone-600' : `${staffBgClass} text-white`}`}
+                                                    >
+                                                        {booking.staff}
+                                                    </span>
+                                                )}
+                                            </div>
 
-                                                {/* Details: Staff and Menu */}
-                                                <div className="flex flex-col gap-1.5 mt-auto pt-1">
-                                                    {booking.treatment_category && (
-                                                        <div className="text-xs sm:text-sm text-stone-500 truncate font-medium" title={booking.treatment_category}>
-                                                            {booking.treatment_category}
+                                            {/* 3. Price & Chevron */}
+                                            <div className="flex items-center gap-2 flex-shrink-0">
+                                                <div className="text-sm font-bold text-blue-600">
+                                                    ¥{(booking.price || 0).toLocaleString()}
+                                                </div>
+                                                <ChevronRightIcon className={cn("w-4 h-4 text-stone-300 transition-transform", isExpanded && "rotate-90")} />
+                                            </div>
+                                        </div>
+
+                                        {/* Expanded Details */}
+                                        {isExpanded && (
+                                            <div className="px-3 pb-3 pt-1 bg-stone-50/50 animate-in fade-in slide-in-from-top-1 duration-200">
+                                                <div className="flex flex-col gap-2 pl-12">
+                                                    <div className="flex flex-wrap items-center gap-3">
+                                                        {booking.treatment_category && (
+                                                            <div className="text-xs text-stone-600 flex items-center gap-1">
+                                                                <CalendarIcon className="w-3 h-3 text-stone-400" />
+                                                                {booking.treatment_category}
+                                                            </div>
+                                                        )}
+                                                        <div className="text-xs text-stone-400">
+                                                            予約時間: {format(booking.start_time, "HH:mm")} 〜 {format(booking.end_time, "HH:mm")}
                                                         </div>
-                                                    )}
-                                                    {booking.staff && (
-                                                        <div>
-                                                            <span
-                                                                className={`inline-block text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-md shadow-sm ${!staffBgClass ? 'bg-stone-100 text-stone-600' : `${staffBgClass} text-white`}`}
-                                                            >
-                                                                担当: {booking.staff}
-                                                            </span>
-                                                        </div>
-                                                    )}
+                                                    </div>
+
                                                     {booking.memo && (
-                                                        <div className="text-xs text-stone-400 italic line-clamp-1 mt-1 border-l-2 border-stone-200 pl-2">
+                                                        <div className="text-xs text-stone-500 italic border-l-2 border-stone-200 pl-2 py-0.5">
                                                             {booking.memo}
                                                         </div>
                                                     )}
-                                                </div>
-                                            </div>
 
-                                            {/* 3. Right: Price & Desktop Action */}
-                                            <div className="flex flex-col justify-between items-end flex-shrink-0 pl-2 sm:pl-4 py-0.5">
-                                                <div className="text-lg sm:text-xl font-bold text-blue-600 leading-none mb-2">
-                                                    ¥{(booking.price || 0).toLocaleString()}
-                                                </div>
-
-                                                {/* Desktop Status Action */}
-                                                <div className="hidden sm:block mt-auto">
-                                                    {booking.status === "completed" ? (
-                                                        <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 bg-emerald-50/80 px-3 py-1.5 rounded-lg border border-emerald-100">
-                                                            <CheckCircle2 className="w-4 h-4" />
-                                                            来店済み
-                                                        </div>
-                                                    ) : (
+                                                    <div className="flex gap-2 mt-1">
+                                                        {booking.status !== "completed" ? (
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleConvertToVisit(booking.id, booking.price || 0);
+                                                                }}
+                                                                className="flex-1 flex items-center justify-center gap-1.5 text-[11px] font-bold text-emerald-700 bg-white border border-emerald-200 hover:bg-emerald-50 py-2 rounded-lg shadow-sm"
+                                                            >
+                                                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                                                お会計へ
+                                                            </button>
+                                                        ) : (
+                                                            <div className="flex-1 flex items-center justify-center gap-1.5 text-[11px] font-bold text-emerald-600 bg-emerald-50/80 py-2 rounded-lg border border-emerald-100">
+                                                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                                                来店済み
+                                                            </div>
+                                                        )}
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
-                                                                handleConvertToVisit(booking.id, booking.price || 0);
+                                                                handleEditClick(booking);
                                                             }}
-                                                            className="flex items-center justify-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-600 hover:text-white transition-colors px-3 py-1.5 rounded-lg shadow-sm"
+                                                            className="flex-1 flex items-center justify-center gap-1.5 text-[11px] font-bold text-stone-600 bg-white border border-stone-200 hover:bg-stone-50 py-2 rounded-lg shadow-sm"
                                                         >
-                                                            <CheckCircle2 className="w-4 h-4" />
-                                                            お会計へ
+                                                            <User className="w-3.5 h-3.5" />
+                                                            詳細・編集
                                                         </button>
-                                                    )}
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-
-                                        {/* 4. Mobile Action Footer */}
-                                        <div className="sm:hidden border-t border-stone-100 bg-stone-50/50 p-2.5 flex justify-end">
-                                            {booking.status === "completed" ? (
-                                                <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 bg-emerald-50/80 px-4 py-2 rounded-lg border border-emerald-100 w-full justify-center">
-                                                    <CheckCircle2 className="w-4 h-4" />
-                                                    来店済み
-                                                </div>
-                                            ) : (
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleConvertToVisit(booking.id, booking.price || 0);
-                                                    }}
-                                                    className="flex items-center justify-center gap-1.5 text-xs font-bold text-emerald-700 bg-white border border-emerald-200 hover:bg-emerald-50 transition-colors px-4 py-2 rounded-lg shadow-sm w-full active:scale-[0.98]"
-                                                >
-                                                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                                    タップして来店済みにする（お会計）
-                                                </button>
-                                            )}
-                                        </div>
+                                        )}
                                     </div>
                                 );
                             })
