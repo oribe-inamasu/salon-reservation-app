@@ -151,12 +151,22 @@ export default function NewVisitClient({
                         </div>
                     )}
 
-                    {/* Visit Date */}
+                     {/* Visit Info */}
                     <div className="bg-card border rounded-2xl p-4 shadow-sm space-y-4">
                         <h3 className="font-bold border-b pb-2 text-primary">来店情報</h3>
+                        
+                        {/* 1. Customer (Read-only for New Visit as it's from the page context usually, but good to show) */}
+                        <div className="space-y-1.5">
+                            <label className="text-sm font-medium text-foreground">顧客</label>
+                            <div className="w-full p-3 bg-muted/50 border border-muted rounded-xl text-sm font-bold text-stone-600">
+                                {customer.name} 様
+                            </div>
+                        </div>
+
+                        {/* 2. Time */}
                         <div className="space-y-1.5">
                             <label className="text-sm font-medium text-foreground flex items-center gap-1">
-                                来店日時
+                                時間（来店日時）
                                 <span className="text-xs text-red-500 font-bold">必須</span>
                             </label>
                             <input
@@ -167,8 +177,9 @@ export default function NewVisitClient({
                             />
                         </div>
 
+                        {/* 3. Staff */}
                         <div className="space-y-1.5 pt-2 border-t">
-                            <label className="text-sm font-medium text-foreground">担当スタッフ（任意）</label>
+                            <label className="text-sm font-medium text-foreground">担当スタッフ</label>
                             <select
                                 value={staff}
                                 onChange={(e) => setStaff(e.target.value)}
@@ -185,6 +196,7 @@ export default function NewVisitClient({
                     {/* Treatment Content */}
                     <div className="bg-card border rounded-2xl p-4 shadow-sm space-y-4">
                         <h3 className="font-bold border-b pb-2 text-primary">施術内容</h3>
+                        {/* 4. Course */}
                         <div className="space-y-1.5 p-3 bg-primary/5 rounded-xl border border-primary/10">
                             <label className="text-xs font-bold text-primary flex items-center gap-1 uppercase tracking-wider">
                                 <Clock className="w-3 h-3" /> コース
@@ -211,6 +223,7 @@ export default function NewVisitClient({
                             </select>
                         </div>
 
+                        {/* 5. Option */}
                         <div className="space-y-1.5 p-3 bg-amber-50 rounded-xl border border-amber-100">
                             <label className="text-xs font-bold text-amber-700 flex items-center gap-1 uppercase tracking-wider">
                                 <PlusCircle className="w-3 h-3" /> オプション・割引
@@ -255,22 +268,13 @@ export default function NewVisitClient({
                                 )}
                             </div>
                         </div>
-
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-foreground">施術内容の詳細（任意）</label>
-                            <input
-                                type="text"
-                                value={treatmentContent}
-                                onChange={(e) => setTreatmentContent(e.target.value)}
-                                placeholder="例: 全身調整＋ヘッド 60分など"
-                                className="w-full p-3 bg-muted border-none rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
-                            />
-                        </div>
                     </div>
 
                     {/* Price & Memo */}
                     <div className="bg-card border rounded-2xl p-4 shadow-sm space-y-4">
                         <h3 className="font-bold border-b pb-2 text-primary">会計・記録</h3>
+                        
+                        {/* 6. Adjustment */}
                         <div className="space-y-1.5">
                             <label className="text-sm font-medium text-foreground">登録外の調整額（例：-500, +1000）</label>
                             <input
@@ -287,9 +291,10 @@ export default function NewVisitClient({
                             />
                         </div>
 
+                        {/* 7. Memo */}
                         <div className="space-y-1.5">
                             <label className="text-sm font-medium text-foreground flex items-center justify-between">
-                                <span>🔒 スタッフ用メモ（非公開）</span>
+                                <span>🔒 メモ（スタッフ用メモ）</span>
                                 <span className="text-[10px] text-muted-foreground font-normal">※次回への引き継ぎなど</span>
                             </label>
                             <div className="bg-amber-50 dark:bg-amber-900/10 p-1 border border-amber-100 dark:border-amber-900/30 rounded-xl">
@@ -303,8 +308,9 @@ export default function NewVisitClient({
                             </div>
                         </div>
 
+                        {/* 8. Final Price */}
                         <div className="space-y-1.5 pt-4 border-t">
-                            <label className="text-sm font-bold text-foreground">最終料金（円）</label>
+                            <label className="text-sm font-bold text-foreground">施術料金（最終料金）</label>
                             <div className="relative">
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">¥</span>
                                 <input
@@ -315,6 +321,18 @@ export default function NewVisitClient({
                                     className="w-full p-3 pl-8 bg-muted border-none rounded-xl text-sm text-right focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow font-bold text-lg"
                                 />
                             </div>
+                        </div>
+
+                        {/* Extra: Content (placed at bottom to not interfere with requested 1-8) */}
+                        <div className="space-y-1.5 pt-2 border-t opacity-70">
+                            <label className="text-xs font-medium text-muted-foreground">施術内容の詳細（任意）</label>
+                            <input
+                                type="text"
+                                value={treatmentContent}
+                                onChange={(e) => setTreatmentContent(e.target.value)}
+                                placeholder="例: 全身調整＋ヘッド 60分など"
+                                className="w-full p-2 bg-muted/50 border-none rounded-lg text-xs focus:outline-none"
+                            />
                         </div>
                     </div>
 

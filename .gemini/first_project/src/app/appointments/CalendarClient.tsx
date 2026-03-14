@@ -663,7 +663,7 @@ export default function CalendarClient({
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs font-bold text-stone-400 mb-1.5 uppercase tracking-wider">開始時間</label>
+                                    <label className="block text-xs font-bold text-stone-400 mb-1.5 uppercase tracking-wider">時間（開始）</label>
                                     <input
                                         type="time"
                                         value={formStartTime}
@@ -673,7 +673,7 @@ export default function CalendarClient({
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-stone-400 mb-1.5 uppercase tracking-wider">終了時間</label>
+                                    <label className="block text-xs font-bold text-stone-400 mb-1.5 uppercase tracking-wider">時間（終了）</label>
                                     <input
                                         type="time"
                                         value={formEndTime}
@@ -685,7 +685,7 @@ export default function CalendarClient({
                             </div>
 
                             <div className="col-span-2">
-                                <label className="block text-xs font-bold text-stone-400 mb-1.5 uppercase tracking-wider">担当スタッフ（任意）</label>
+                                <label className="block text-xs font-bold text-stone-400 mb-1.5 uppercase tracking-wider">担当スタッフ</label>
                                 <select
                                     value={formStaff}
                                     onChange={(e) => setFormStaff(e.target.value)}
