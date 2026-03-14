@@ -12,8 +12,9 @@ export default async function EditVisitPage({
 }) {
     const { id, visitId } = await params;
 
-    const visit = await prisma.visitHistory.findUnique({
+     const visit = await prisma.visitHistory.findUnique({
         where: { id: visitId, customerId: id },
+        include: { customer: true },
     });
 
     if (!visit) {
@@ -30,6 +31,9 @@ export default async function EditVisitPage({
         staff: visit.staff,
         staff_memo: visit.staff_memo,
         adjustment_price: visit.adjustment_price,
+        customer: {
+            name: visit.customer.name,
+        }
     };
     const { serviceNames, staffNames, serviceCourses, optionServices } = await getAppSettings();
 

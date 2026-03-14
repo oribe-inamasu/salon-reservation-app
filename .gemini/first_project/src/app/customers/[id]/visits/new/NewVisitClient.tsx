@@ -14,12 +14,14 @@ function cn(...inputs: ClassValue[]) {
 
 export default function NewVisitClient({
     params,
+    customer,
     serviceNames,
     staffNames,
     serviceCourses,
     optionServices,
 }: {
     params: Promise<{ id: string }>;
+    customer: any;
     serviceNames: string[];
     staffNames: string[];
     serviceCourses: ServiceCourse[];
