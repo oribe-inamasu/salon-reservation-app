@@ -17,6 +17,7 @@ export type ServiceCourse = {
     name: string;
     duration: number; // in minutes
     price: number;
+    category?: string;
 };
 
 export type OptionService = {
@@ -24,6 +25,7 @@ export type OptionService = {
     name: string;
     duration: number; // in minutes
     price: number;
+    category?: string;
 };
 
 const DEFAULT_STAFF: StaffMember[] = [

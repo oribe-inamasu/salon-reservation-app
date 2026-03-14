@@ -709,7 +709,7 @@ export default function CalendarClient({
                                             setSelectedCourseId(courseId);
                                             const course = serviceCourses.find(c => c.id === courseId);
                                             if (course) {
-                                                setFormCategory(course.name);
+                                                setFormCategory(course.category || course.name);
                                                 setFormPrice(String(course.price));
                                                 // Update end time
                                                 const [h, m] = formStartTime.split(":").map(Number);

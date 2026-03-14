@@ -105,12 +105,14 @@ export default function SettingsClient({ initialSettings }: { initialSettings: R
                 {activeTab === "courses" && (
                     <CourseSettingsTab
                         initialData={settings.service_courses as ServiceCourse[]}
+                        serviceCategories={settings.service_categories as ServiceCategory[]}
                         onSave={(data) => handleSaveSettings({ service_courses: data })}
                     />
                 )}
                 {activeTab === "options" && (
                     <OptionsSettingsTab
                         initialData={settings.option_services as OptionService[]}
+                        serviceCategories={settings.service_categories as ServiceCategory[]}
                         onSave={(data) => handleSaveSettings({ option_services: data })}
                     />
                 )}
