@@ -27,10 +27,11 @@ export async function POST(
             start_time: new Date(data.visit_date),
             end_time: new Date(new Date(data.visit_date).getTime() + 60 * 60 * 1000), // Default 1 hour
             treatment_category: data.treatment_category || null,
-            price: data.price ? parseInt(data.price, 10) : null,
+            price: data.price ? parseInt(String(data.price), 10) : null,
             memo: data.staff_memo || null,
             status: "completed",
             staff: data.staff || null,
+            adjustment_price: data.adjustment_price ? parseInt(String(data.adjustment_price), 10) : 0,
         };
         console.log("Creating booking with data:", bookingData);
         // 1. Create a placeholder booking
@@ -43,9 +44,10 @@ export async function POST(
             visit_date: new Date(data.visit_date),
             treatment_category: data.treatment_category || null,
             treatment_content: data.treatment_content || null,
-            price: data.price ? parseInt(data.price, 10) : null,
+            price: data.price ? parseInt(String(data.price), 10) : null,
             staff_memo: data.staff_memo || null,
             staff: data.staff || null,
+            adjustment_price: data.adjustment_price ? parseInt(String(data.adjustment_price), 10) : 0,
             bookingId: booking.id, // Link them
         };
         console.log("Creating visit with data:", visitData);

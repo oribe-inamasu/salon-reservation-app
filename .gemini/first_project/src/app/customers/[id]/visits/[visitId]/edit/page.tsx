@@ -29,6 +29,7 @@ export default async function EditVisitPage({
         price: visit.price,
         staff: visit.staff,
         staff_memo: visit.staff_memo,
+        adjustment_price: visit.adjustment_price,
     };
     const { serviceNames, staffNames, serviceCourses, optionServices } = await getAppSettings();
 
