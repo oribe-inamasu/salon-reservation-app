@@ -99,6 +99,7 @@ export default function CalendarClient({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [viewMode, setViewMode] = useState<"bookings" | "birthdays">("bookings");
     const [expandedBookingIds, setExpandedBookingIds] = useState<Set<string>>(new Set());
+    const [isMonthlySummaryExpanded, setIsMonthlySummaryExpanded] = useState(false);
 
     // Form State
     const [formMode, setFormMode] = useState<"create" | "edit">("create");
@@ -145,6 +146,16 @@ export default function CalendarClient({
     const monthlyTotalSales = useMemo(() => {
         return currentMonthBookings.reduce((sum, b) => sum + (b.price || 0), 0);
     }, [currentMonthBookings]);
+
+    const dailyAverageSpend = useMemo(() => {
+        if (selectedDateBookings.length === 0) return 0;
+        return Math.floor(dailyTotalSales / selectedDateBookings.length);
+    }, [dailyTotalSales, selectedDateBookings]);
+
+    const monthlyAverageSpend = useMemo(() => {
+        if (currentMonthBookings.length === 0) return 0;
+        return Math.floor(monthlyTotalSales / currentMonthBookings.length);
+    }, [monthlyTotalSales, currentMonthBookings]);
 
     // Birthday Logic
     const selectedDateBirthdays = useMemo(() => {
@@ -427,12 +438,35 @@ export default function CalendarClient({
                 <div className="sticky top-14 z-30 flex flex-col shadow-sm">
                     {/* Monthly Summary (Only in Bookings Mode) */}
                     {viewMode === "bookings" && (
-                        <div className="bg-stone-100 border-b px-4 py-2 flex items-center justify-between text-sm text-stone-600">
-                            <span className="font-bold">{format(currentMonth, "yyyy年M月", { locale: ja })} の合計</span>
-                            <div className="flex items-center gap-4 font-bold">
-                                <span>{currentMonthBookings.length} 件</span>
-                                <span className="text-stone-700">¥{monthlyTotalSales.toLocaleString()}</span>
-                            </div>
+                        <div className="bg-stone-100 border-b overflow-hidden transition-all duration-300">
+                            <button
+                                onClick={() => setIsMonthlySummaryExpanded(!isMonthlySummaryExpanded)}
+                                className="w-full px-4 py-2 flex items-center justify-between text-sm text-stone-600 hover:bg-stone-200/50 transition-colors"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <ChevronRightIcon className={cn("w-4 h-4 text-stone-400 transition-transform duration-300", isMonthlySummaryExpanded && "rotate-90")} />
+                                    <span className="font-bold">{format(currentMonth, "yyyy年M月", { locale: ja })} の合計</span>
+                                </div>
+                                <div className="flex items-center gap-4 font-bold">
+                                    <span>{currentMonthBookings.length} 件</span>
+                                    <span className="text-stone-700">¥{monthlyTotalSales.toLocaleString()}</span>
+                                </div>
+                            </button>
+                            
+                            {isMonthlySummaryExpanded && (
+                                <div className="px-4 pb-3 pt-1 flex flex-col gap-1 border-t border-stone-200/50 bg-stone-50/50 animate-in slide-in-from-top-2 duration-300">
+                                    <div className="flex justify-between items-center text-xs ml-6">
+                                        <span className="text-stone-400 font-bold uppercase tracking-wider">月間客単価 (ARPU)</span>
+                                        <span className="font-bold text-stone-700">¥{monthlyAverageSpend.toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-xs ml-6">
+                                        <span className="text-stone-400 font-bold uppercase tracking-wider">予約成約率</span>
+                                        <span className="font-bold text-stone-700">
+                                            {currentMonthBookings.length > 0 ? Math.round((currentMonthBookings.filter(b => b.status === "completed").length / currentMonthBookings.length) * 100) : 0}%
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -445,13 +479,20 @@ export default function CalendarClient({
                         </div>
                         {viewMode === "bookings" ? (
                             <>
-                                <div className="flex items-center gap-6">
-                                    <div className="flex items-baseline gap-1">
-                                        <span className="text-xl font-bold text-blue-600">{selectedDateBookings.length}</span>
-                                        <span className="text-xs text-stone-400 font-bold">件</span>
+                                <div className="flex items-center gap-4">
+                                    <div className="flex flex-col items-end">
+                                        <div className="text-xl font-bold text-stone-700">
+                                            ¥{dailyTotalSales.toLocaleString()}
+                                        </div>
+                                        {selectedDateBookings.length > 0 && (
+                                            <div className="text-[10px] font-bold text-stone-400 -mt-1 uppercase tracking-tighter">
+                                                客単価: ¥{dailyAverageSpend.toLocaleString()}
+                                            </div>
+                                        )}
                                     </div>
-                                    <div className="text-xl font-bold text-stone-700">
-                                        ¥{dailyTotalSales.toLocaleString()}
+                                    <div className="flex items-baseline gap-1 bg-blue-50 px-2 py-1 rounded-lg border border-blue-100">
+                                        <span className="text-lg font-bold text-blue-600">{selectedDateBookings.length}</span>
+                                        <span className="text-[10px] text-blue-400 font-bold">件</span>
                                     </div>
                                 </div>
                                 <button

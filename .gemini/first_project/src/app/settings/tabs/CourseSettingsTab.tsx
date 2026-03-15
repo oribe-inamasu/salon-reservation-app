@@ -28,7 +28,7 @@ export default function CourseSettingsTab({
     const handleAddCourse = () => {
         const newCourse: ServiceCourse = {
             id: crypto.randomUUID(),
-            name: "新しいコース",
+            name: "新コース",
             duration: 60,
             price: 5000,
         };

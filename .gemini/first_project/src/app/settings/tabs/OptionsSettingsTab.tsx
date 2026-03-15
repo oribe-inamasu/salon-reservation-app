@@ -28,7 +28,7 @@ export default function OptionsSettingsTab({
     const handleAddOption = () => {
         const newOption: OptionService = {
             id: crypto.randomUUID(),
-            name: "新しいオプション",
+            name: "新項目",
             duration: 0,
             price: 500,
         };
