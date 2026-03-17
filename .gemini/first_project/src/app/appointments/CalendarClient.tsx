@@ -12,7 +12,6 @@ import {
     eachDayOfInterval,
     isSameMonth,
     isSameDay,
-    addDays,
     isToday
 } from "date-fns";
 import { ja } from "date-fns/locale";
@@ -26,7 +25,6 @@ import {
     Calendar as CalendarIcon,
     Trash2,
     PlusCircle,
-    JapaneseYen,
     Check,
     Cake
 } from "lucide-react";
@@ -79,7 +77,7 @@ export default function CalendarClient({
     serviceCourses,
     optionServices,
 }: {
-    initialBookings: any[];
+    initialBookings: (Omit<BookingWithCustomer, 'start_time' | 'end_time'> & { start_time: string | Date; end_time: string | Date })[];
     customers: CustomerShort[];
     serviceNames: string[];
     staffNames: string[];
@@ -159,7 +157,7 @@ export default function CalendarClient({
         const methods = ["現金", "カード", "電子マネー", "その他"];
         return methods.map(method => {
             const total = selectedDateBookings
-                .filter(b => ((b as any).payment_method || "現金") === method)
+                .filter(b => (b.payment_method || "現金") === method)
                 .reduce((sum, b) => sum + (b.price || 0), 0);
             return { name: method, value: total };
         }).filter(item => item.value > 0);

@@ -11,7 +11,7 @@ export default async function ReportsPage({
 }) {
     const params = await searchParams;
     const appSettings = await getAppSettings();
-    const { serviceNames, staffNames, serviceColorMap, staffColorMap } = appSettings;
+    const { serviceNames, staffNames, serviceColorMap } = appSettings;
 
     // Parse the requested month, or use current month
     let targetDate = new Date();
