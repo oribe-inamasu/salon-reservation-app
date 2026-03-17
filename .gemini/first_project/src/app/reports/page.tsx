@@ -70,7 +70,7 @@ export default async function ReportsPage({
     const staffMap = new Map<string, { 
         value: number; 
         categories: Map<string, number>; 
-        visits: any[] 
+        visits: typeof visits 
     }>();
 
     visits.forEach(v => {
@@ -128,7 +128,6 @@ export default async function ReportsPage({
             currentMonthLabel={currentMonthLabel}
             currentMonthValue={currentMonthValue}
             serviceColorMap={serviceColorMap}
-            staffColorMap={staffColorMap}
         />
     );
 }

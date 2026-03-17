@@ -31,6 +31,7 @@ export default async function EditVisitPage({
         staff: visit.staff,
         staff_memo: visit.staff_memo,
         adjustment_price: visit.adjustment_price,
+        payment_method: visit.payment_method,
         customer: {
             name: visit.customer.name,
         }

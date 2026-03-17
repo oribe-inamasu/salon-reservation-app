@@ -56,6 +56,7 @@ type BookingWithCustomer = {
     staff: string | null;
     status: string;
     adjustment_price: number;
+    payment_method?: string | null;
 };
 
 type CustomerShort = {
@@ -209,9 +210,8 @@ export default function CalendarClient({
         setFormStartTime(format(booking.start_time, "HH:mm"));
         setFormEndTime(format(booking.end_time, "HH:mm"));
         setFormCategory(booking.treatment_category || serviceNames[0] || "");
-        setFormPrice(String(booking.price || 0));
         setFormAdjustment(String(booking.adjustment_price || 0));
-        setFormPaymentMethod((booking as any).payment_method || "現金");
+        setFormPaymentMethod(booking.payment_method || "現金");
         setFormStaff(booking.staff || "");
         setFormMemo(booking.memo || "");
 
@@ -420,7 +420,7 @@ export default function CalendarClient({
                         ))}
                     </div>
                     <div className="grid grid-cols-7">
-                        {calendarDays.map((day, i) => {
+                        {calendarDays.map((day) => {
                             const isSelected = isSameDay(day, selectedDate);
                             const hasBooking = bookings.some(b => isSameDay(b.start_time, day));
                             const isClosedDay = clinicInfo.closedDays.includes(day.getDay());
@@ -571,7 +571,6 @@ export default function CalendarClient({
                             </div>
                         ) : (
                             selectedDateBookings.map((booking) => {
-                                const labelInfo = booking.customer.attribute_label ? customerLabels.find(l => l.id === booking.customer.attribute_label) : null;
                                 const staffBgClass = booking.staff ? staffColorMap[booking.staff] : undefined;
                                 const isExpanded = expandedBookingIds.has(booking.id);
 
@@ -640,7 +639,7 @@ export default function CalendarClient({
                                                             <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
-                                                                    handleConvertToVisit(booking.id, booking.price || 0, (booking as any).payment_method);
+                                                                    handleConvertToVisit(booking.id, booking.price || 0, booking.payment_method || "現金");
                                                                 }}
                                                                 className="flex-1 flex items-center justify-center gap-1.5 text-[11px] font-bold text-emerald-700 bg-white border border-emerald-200 hover:bg-emerald-50 py-2 rounded-lg shadow-sm"
                                                             >

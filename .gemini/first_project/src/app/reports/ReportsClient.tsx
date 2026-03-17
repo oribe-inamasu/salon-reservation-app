@@ -38,7 +38,6 @@ export default function ReportsClient({
     currentMonthLabel,
     currentMonthValue,
     serviceColorMap,
-    staffColorMap,
     salesByPaymentMethod,
 }: {
     salesData: SalesDataPoint[];
@@ -47,7 +46,6 @@ export default function ReportsClient({
     currentMonthLabel: string;
     currentMonthValue: string;
     serviceColorMap: Record<string, string>;
-    staffColorMap: Record<string, string>;
     salesByPaymentMethod: SalesDataPoint[];
 }) {
     const router = useRouter();
@@ -189,7 +187,7 @@ export default function ReportsClient({
  
                     {/* Legend List */}
                     <div className="space-y-3 mt-4">
-                        {currentChartData.map((item: SalesDataPoint, index: number) => (
+                        {currentChartData.map((item: SalesDataPoint) => (
                             <div key={item.name} className="flex items-center justify-between text-sm">
                                 <div className="flex items-center gap-2 overflow-hidden">
                                     <div
@@ -291,7 +289,7 @@ export default function ReportsClient({
                                                     </div>
                                                 ) : (
                                                     <div className="space-y-2">
-                                                        {staff.visits.map((visit: any) => (
+                                                        {staff.visits.map((visit) => (
                                                             <div key={visit.id} className="bg-white p-3 rounded-xl border border-stone-200 shadow-sm flex flex-col gap-1">
                                                                 <div className="flex justify-between items-start">
                                                                     <div className="font-bold text-stone-700 text-sm">
