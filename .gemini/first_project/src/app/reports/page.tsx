@@ -50,70 +50,79 @@ export default async function ReportsPage({
         }
     });
 
-    // Aggregate by category
-    const salesByCategory = serviceNames.map(category => {
-        const total = visits
-            .filter(v => v.treatment_category === category)
-            .reduce((sum, v) => sum + (v.price || 0), 0);
+    const totalSales = visits.reduce((sum, v) => sum + (v.price || 0), 0);
 
+    // Aggregate by category
+    const categoryMap = new Map<string, number>();
+    visits.forEach(v => {
+        const category = (v.treatment_category && serviceNames.includes(v.treatment_category)) 
+            ? v.treatment_category 
+            : "その他";
+        categoryMap.set(category, (categoryMap.get(category) || 0) + (v.price || 0));
+    });
+
+    const salesByCategory = Array.from(categoryMap.entries())
+        .map(([name, value]) => ({ name, value }))
+        .filter(item => item.value > 0)
+        .sort((a, b) => b.value - a.value);
+
+    // Aggregate by staff
+    const staffMap = new Map<string, { 
+        value: number; 
+        categories: Map<string, number>; 
+        visits: any[] 
+    }>();
+
+    visits.forEach(v => {
+        const staff = (v.staff && staffNames.includes(v.staff)) ? v.staff : "指名なし";
+        const category = (v.treatment_category && serviceNames.includes(v.treatment_category)) 
+            ? v.treatment_category 
+            : "その他";
+
+        if (!staffMap.has(staff)) {
+            staffMap.set(staff, { value: 0, categories: new Map(), visits: [] });
+        }
+
+        const staffData = staffMap.get(staff)!;
+        staffData.value += (v.price || 0);
+        staffData.visits.push(v);
+        staffData.categories.set(category, (staffData.categories.get(category) || 0) + (v.price || 0));
+    });
+
+    const filteredSalesByStaff = Array.from(staffMap.entries())
+        .map(([name, data]) => ({
+            name,
+            value: data.value,
+            visits: data.visits,
+            categories: Array.from(data.categories.entries()).map(([cName, cValue]) => ({
+                name: cName,
+                value: cValue
+            }))
+        }))
+        .filter(item => item.value > 0)
+        .sort((a, b) => b.value - a.value);
+
+    const paymentMethods = ["現金", "カード", "電子マネー", "その他"];
+    const salesByPaymentMethod = paymentMethods.map(method => {
+        const total = visits
+            .filter(v => {
+                const vm = v.payment_method;
+                if (method === "その他") {
+                    return !vm || !paymentMethods.includes(vm) || vm === "その他";
+                }
+                return vm === method;
+            })
+            .reduce((sum, v) => sum + (v.price || 0), 0);
         return {
-            name: category,
+            name: method,
             value: total,
         };
     }).filter(item => item.value > 0);
 
-    // Aggregate by staff
-    const salesByStaff = staffNames.map(staff => {
-        const staffVisits = visits.filter(v => v.staff === staff);
-        const total = staffVisits.reduce((sum, v) => sum + (v.price || 0), 0);
-
-        const categories = serviceNames.map(category => {
-            return {
-                name: category,
-                value: staffVisits.filter(v => v.treatment_category === category).reduce((sum, v) => sum + (v.price || 0), 0)
-            };
-        }).filter(c => c.value > 0);
-
-        return {
-            name: staff,
-            value: total,
-            categories,
-            visits: staffVisits,
-        };
-    });
-
-    // Handle null staff as "指名なし"
-    const noStaffVisits = visits.filter(v => !v.staff);
-    const noStaffTotal = noStaffVisits.reduce((sum, v) => sum + (v.price || 0), 0);
-
-    if (noStaffTotal > 0) {
-        const categories = serviceNames.map(category => {
-            return {
-                name: category,
-                value: noStaffVisits.filter(v => v.treatment_category === category).reduce((sum, v) => sum + (v.price || 0), 0)
-            };
-        }).filter(c => c.value > 0);
-
-        const noStaffIndex = salesByStaff.findIndex(item => item.name === "指名なし");
-        if (noStaffIndex !== -1) {
-            salesByStaff[noStaffIndex].value += noStaffTotal;
-            // For simplicity, we assume "指名なし" is not in STAFF_MEMBERS list.
-            // If it is, merging arrays would be needed, but it's typically an edge case.
-            salesByStaff[noStaffIndex].categories = categories;
-            salesByStaff[noStaffIndex].visits = [...salesByStaff[noStaffIndex].visits, ...noStaffVisits];
-        } else {
-            salesByStaff.push({ name: "指名なし", value: noStaffTotal, categories, visits: noStaffVisits });
-        }
-    }
-
-    const filteredSalesByStaff = salesByStaff.filter(item => item.value > 0).sort((a, b) => b.value - a.value);
-
-    // If no real data has price yet, we might want to handle it or show 0
-    const totalSales = salesByCategory.reduce((sum, item) => sum + item.value, 0);
-
     return (
         <ReportsClient
             salesData={salesByCategory}
+            salesByPaymentMethod={salesByPaymentMethod}
             salesByStaff={filteredSalesByStaff}
             totalSales={totalSales}
             currentMonthLabel={currentMonthLabel}

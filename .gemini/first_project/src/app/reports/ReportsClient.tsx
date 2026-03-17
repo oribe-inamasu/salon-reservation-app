@@ -8,6 +8,13 @@ import { format } from "date-fns";
 
 
 
+import { twMerge } from "tailwind-merge";
+import { clsx, type ClassValue } from "clsx";
+
+function cn(...inputs: ClassValue[]) {
+    return twMerge(clsx(inputs));
+}
+
 type SalesDataPoint = {
     name: string;
     value: number;
@@ -19,7 +26,8 @@ type SalesDataPoint = {
         price: number | null;
         customer: {
             name: string;
-        }
+        };
+        payment_method?: string | null;
     }>;
 };
 
@@ -30,6 +38,8 @@ export default function ReportsClient({
     currentMonthLabel,
     currentMonthValue,
     serviceColorMap,
+    staffColorMap,
+    salesByPaymentMethod,
 }: {
     salesData: SalesDataPoint[];
     salesByStaff: SalesDataPoint[];
@@ -38,9 +48,18 @@ export default function ReportsClient({
     currentMonthValue: string;
     serviceColorMap: Record<string, string>;
     staffColorMap: Record<string, string>;
+    salesByPaymentMethod: SalesDataPoint[];
 }) {
     const router = useRouter();
     const [expandedStaffName, setExpandedStaffName] = useState<string | null>(null);
+    const [reportType, setReportType] = useState<"category" | "payment">("category");
+
+    const paymentColorMap: Record<string, string> = {
+        "現金": "#10b981", // emerald-500
+        "カード": "#3b82f6", // blue-500
+        "電子マネー": "#f59e0b", // amber-500
+        "その他": "#8b5cf6", // violet-500
+    };
 
     const handleMonthChange = (offset: number) => {
         const [yearStr, monthStr] = currentMonthValue.split('-');
@@ -61,14 +80,19 @@ export default function ReportsClient({
     };
 
     const getCategoryColor = (categoryName: string) => {
+        if (reportType === "payment") {
+            return paymentColorMap[categoryName] || "#cbd5e1";
+        }
         return serviceColorMap[categoryName] || "#cbd5e1"; // Fallback color
     };
+
+    const currentChartData = reportType === "category" ? salesData : salesByPaymentMethod;
     return (
         <div className="flex flex-col min-h-screen pb-20 bg-muted/30">
             {/* Header */}
             <header className="sticky top-0 z-40 w-full bg-primary text-primary-foreground border-b border-primary-foreground/20 shadow-md">
                 <div className="flex items-center h-14 px-4 justify-center">
-                    <h1 className="text-lg font-bold">売上レポート (カテゴリ別)</h1>
+                    <h1 className="text-lg font-bold">売上レポート</h1>
                 </div>
             </header>
 
@@ -101,9 +125,37 @@ export default function ReportsClient({
                     </div>
                 </div>
 
+                {/* Report Type Toggle */}
+                <div className="flex p-1 bg-stone-200/50 rounded-2xl">
+                    <button
+                        onClick={() => setReportType("category")}
+                        className={cn(
+                            "flex-1 py-2 text-sm font-bold rounded-xl transition-all",
+                            reportType === "category" 
+                                ? "bg-white text-primary shadow-sm" 
+                                : "text-stone-500 hover:text-stone-700"
+                        )}
+                    >
+                        カテゴリ別
+                    </button>
+                    <button
+                        onClick={() => setReportType("payment")}
+                        className={cn(
+                            "flex-1 py-2 text-sm font-bold rounded-xl transition-all",
+                            reportType === "payment" 
+                                ? "bg-white text-primary shadow-sm" 
+                                : "text-stone-500 hover:text-stone-700"
+                        )}
+                    >
+                        支払い方法別
+                    </button>
+                </div>
+
                 {/* Chart Section */}
-                <div className="bg-card border rounded-2xl p-4 shadow-sm">
-                    <h3 className="font-bold border-b pb-2 mb-4 text-foreground">カテゴリ別 売上内訳</h3>
+                <div className="bg-card border rounded-2xl p-4 shadow-sm text-stone-900 dark:text-stone-100">
+                    <h3 className="font-bold border-b pb-2 mb-4 text-foreground">
+                        {reportType === "category" ? "カテゴリ別" : "支払い方法別"} 売上内訳
+                    </h3>
                     <div className="h-64 w-full">
                         {salesData.length === 0 ? (
                             <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
@@ -113,7 +165,7 @@ export default function ReportsClient({
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
                                     <Pie
-                                        data={salesData}
+                                        data={currentChartData}
                                         cx="50%"
                                         cy="50%"
                                         innerRadius={60}
@@ -121,7 +173,7 @@ export default function ReportsClient({
                                         paddingAngle={2}
                                         dataKey="value"
                                     >
-                                        {salesData.map((entry, index) => (
+                                        {currentChartData.map((entry: SalesDataPoint, index: number) => (
                                             <Cell key={`cell-${index}`} fill={getCategoryColor(entry.name)} />
                                         ))}
                                     </Pie>
@@ -134,10 +186,10 @@ export default function ReportsClient({
                             </ResponsiveContainer>
                         )}
                     </div>
-
+ 
                     {/* Legend List */}
                     <div className="space-y-3 mt-4">
-                        {salesData.map((item, index) => (
+                        {currentChartData.map((item: SalesDataPoint, index: number) => (
                             <div key={item.name} className="flex items-center justify-between text-sm">
                                 <div className="flex items-center gap-2 overflow-hidden">
                                     <div
@@ -188,17 +240,41 @@ export default function ReportsClient({
                                                     className="h-full rounded-full flex overflow-hidden"
                                                     style={{ width: `${Math.max(2, (staff.value / totalSales) * 100)}%` }}
                                                 >
-                                                    {staff.categories?.map((cat) => (
-                                                        <div
-                                                            key={cat.name}
-                                                            className="h-full"
-                                                            style={{
-                                                                width: `${(cat.value / staff.value) * 100}%`,
-                                                                backgroundColor: getCategoryColor(cat.name)
-                                                            }}
-                                                            title={`${cat.name}: ¥${cat.value.toLocaleString()}`}
-                                                        />
-                                                    ))}
+                                                    {(() => {
+                                                        if (reportType === "payment" && staff.visits) {
+                                                            const paymentBreakdown = Object.entries(
+                                                                staff.visits.reduce((acc, visit) => {
+                                                                    const method = visit.payment_method || "現金";
+                                                                    acc[method] = (acc[method] || 0) + (visit.price || 0);
+                                                                    return acc;
+                                                                }, {} as Record<string, number>)
+                                                            ).map(([name, value]) => ({ name, value }));
+
+                                                            return paymentBreakdown.map((pm) => (
+                                                                <div
+                                                                    key={pm.name}
+                                                                    className="h-full transition-all duration-500"
+                                                                    style={{
+                                                                        width: `${(pm.value / staff.value) * 100}%`,
+                                                                        backgroundColor: getCategoryColor(pm.name)
+                                                                    }}
+                                                                    title={`${pm.name}: ¥${pm.value.toLocaleString()}`}
+                                                                />
+                                                            ));
+                                                        }
+
+                                                        return staff.categories?.map((cat: { name: string; value: number }) => (
+                                                            <div
+                                                                key={cat.name}
+                                                                className="h-full transition-all duration-500"
+                                                                style={{
+                                                                    width: `${(cat.value / staff.value) * 100}%`,
+                                                                    backgroundColor: getCategoryColor(cat.name)
+                                                                }}
+                                                                title={`${cat.name}: ¥${cat.value.toLocaleString()}`}
+                                                            />
+                                                        ));
+                                                    })()}
                                                 </div>
                                             </div>
                                             <div className="text-[10px] text-muted-foreground text-right">
@@ -215,7 +291,7 @@ export default function ReportsClient({
                                                     </div>
                                                 ) : (
                                                     <div className="space-y-2">
-                                                        {staff.visits.map((visit) => (
+                                                        {staff.visits.map((visit: any) => (
                                                             <div key={visit.id} className="bg-white p-3 rounded-xl border border-stone-200 shadow-sm flex flex-col gap-1">
                                                                 <div className="flex justify-between items-start">
                                                                     <div className="font-bold text-stone-700 text-sm">

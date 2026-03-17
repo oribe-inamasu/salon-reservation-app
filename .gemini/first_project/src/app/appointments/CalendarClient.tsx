@@ -100,6 +100,7 @@ export default function CalendarClient({
     const [viewMode, setViewMode] = useState<"bookings" | "birthdays">("bookings");
     const [expandedBookingIds, setExpandedBookingIds] = useState<Set<string>>(new Set());
     const [isMonthlySummaryExpanded, setIsMonthlySummaryExpanded] = useState(false);
+    const [isDailySummaryExpanded, setIsDailySummaryExpanded] = useState(false);
 
     // Form State
     const [formMode, setFormMode] = useState<"create" | "edit">("create");
@@ -112,6 +113,7 @@ export default function CalendarClient({
     const [formStaff, setFormStaff] = useState("");
     const [formMemo, setFormMemo] = useState("");
     const [formAdjustment, setFormAdjustment] = useState("0");
+    const [formPaymentMethod, setFormPaymentMethod] = useState<string>("現金");
     const [selectedCourseId, setSelectedCourseId] = useState("");
     const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>([]);
 
@@ -151,6 +153,17 @@ export default function CalendarClient({
         if (selectedDateBookings.length === 0) return 0;
         return Math.floor(dailyTotalSales / selectedDateBookings.length);
     }, [dailyTotalSales, selectedDateBookings]);
+    
+    const dailySalesByPayment = useMemo(() => {
+        const methods = ["現金", "カード", "電子マネー", "その他"];
+        return methods.map(method => {
+            const total = selectedDateBookings
+                .filter(b => ((b as any).payment_method || "現金") === method)
+                .reduce((sum, b) => sum + (b.price || 0), 0);
+            return { name: method, value: total };
+        }).filter(item => item.value > 0);
+    }, [selectedDateBookings]);
+
 
     const monthlyAverageSpend = useMemo(() => {
         if (currentMonthBookings.length === 0) return 0;
@@ -183,6 +196,7 @@ export default function CalendarClient({
         setFormStaff("");
         setFormMemo("");
         setFormAdjustment("0");
+        setFormPaymentMethod("現金");
         setSelectedCourseId("");
         setSelectedOptionIds([]);
         setIsModalOpen(true);
@@ -197,6 +211,7 @@ export default function CalendarClient({
         setFormCategory(booking.treatment_category || serviceNames[0] || "");
         setFormPrice(String(booking.price || 0));
         setFormAdjustment(String(booking.adjustment_price || 0));
+        setFormPaymentMethod((booking as any).payment_method || "現金");
         setFormStaff(booking.staff || "");
         setFormMemo(booking.memo || "");
 
@@ -264,6 +279,7 @@ export default function CalendarClient({
                 treatment_category: formCategory,
                 price: price,
                 adjustment_price: parseInt(formAdjustment) || 0,
+                payment_method: formPaymentMethod,
                 staff: formStaff || undefined,
                 memo: formMemo,
             });
@@ -289,6 +305,7 @@ export default function CalendarClient({
                 treatment_category: formCategory,
                 price: price,
                 adjustment_price: parseInt(formAdjustment) || 0,
+                payment_method: formPaymentMethod,
                 staff: formStaff || undefined,
                 memo: formMemo,
             });
@@ -330,9 +347,9 @@ export default function CalendarClient({
         });
     };
 
-    const handleConvertToVisit = async (id: string, price: number) => {
+    const handleConvertToVisit = async (id: string, price: number, payment_method?: string) => {
         setIsSubmitting(true);
-        const result = await convertToVisit(id, price);
+        const result = await convertToVisit(id, price, payment_method);
         if (result.success) {
             setBookings(bookings.map(b => b.id === id ? { ...b, status: "completed" } : b));
         } else {
@@ -358,9 +375,9 @@ export default function CalendarClient({
                 </div>
             </header>
 
-            {/* Toggle Switch */}
-            <div className="bg-stone-50 p-2 flex justify-center border-b">
-                <div className="flex bg-stone-200 p-1 rounded-xl w-full max-w-xs">
+            {/* Toggle Switch & Add Button Area */}
+            <div className="bg-stone-50 px-4 py-2 flex items-center justify-center border-b relative">
+                <div className="flex bg-stone-200 p-1 rounded-xl w-full max-w-[280px]">
                     <button
                         onClick={() => setViewMode("bookings")}
                         className={cn(
@@ -382,6 +399,14 @@ export default function CalendarClient({
                         誕生日
                     </button>
                 </div>
+                {viewMode === "bookings" && (
+                    <button
+                        onClick={handleAddClick}
+                        className="absolute right-4 p-2 bg-emerald-600 text-white rounded-full hover:bg-emerald-700 transition-all shadow-md active:scale-95"
+                    >
+                        <Plus className="w-5 h-5" />
+                    </button>
+                )}
             </div>
 
             <main className="flex-1 space-y-0">
@@ -471,41 +496,66 @@ export default function CalendarClient({
                     )}
 
                     {/* Daily Summary */}
-                    <div className="bg-white/95 backdrop-blur-md border-b px-4 py-3 flex items-center justify-between">
-                        <div className="flex items-baseline gap-2">
-                            <span className="text-xl font-bold text-stone-700">
-                                {format(selectedDate, "yyyy年M月d日(E)", { locale: ja })}
-                            </span>
-                        </div>
-                        {viewMode === "bookings" ? (
-                            <>
-                                <div className="flex items-center gap-4">
-                                    <div className="flex flex-col items-end">
-                                        <div className="text-xl font-bold text-stone-700">
-                                            ¥{dailyTotalSales.toLocaleString()}
+                    <div className="bg-white/95 backdrop-blur-md border-b flex flex-col shadow-sm">
+                        <div className="px-4 py-3 flex items-center justify-between">
+                            <button 
+                                onClick={() => viewMode === "bookings" && setIsDailySummaryExpanded(!isDailySummaryExpanded)}
+                                className="flex-1 flex items-center justify-between hover:bg-stone-50 transition-colors -ml-1 pl-1"
+                            >
+                                <div className="flex items-baseline gap-2">
+                                    {viewMode === "bookings" && (
+                                        <ChevronRightIcon className={cn("w-4 h-4 text-stone-400 transition-transform duration-300", isDailySummaryExpanded && "rotate-90")} />
+                                    )}
+                                    <span className="text-lg font-bold text-stone-700">
+                                        {format(selectedDate, "M/d(E)", { locale: ja })}
+                                    </span>
+                                    {viewMode === "bookings" && (
+                                        <div className="flex items-baseline gap-0.5 bg-blue-50 px-2 py-0.5 rounded border border-blue-100/50">
+                                            <span className="text-xs font-bold text-blue-600">{selectedDateBookings.length}</span>
+                                            <span className="text-[10px] text-blue-400 font-bold">件</span>
                                         </div>
-                                        {selectedDateBookings.length > 0 && (
-                                            <div className="text-[10px] font-bold text-stone-400 -mt-1 uppercase tracking-tighter">
-                                                客単価: ¥{dailyAverageSpend.toLocaleString()}
-                                            </div>
+                                    )}
+                                </div>
+                                {viewMode === "bookings" ? (
+                                    <div className="flex items-baseline gap-1">
+                                        <span className="text-sm text-stone-400 font-medium">合計</span>
+                                        <span className="text-lg font-bold text-stone-700">¥{dailyTotalSales.toLocaleString()}</span>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-lg font-bold text-pink-600">{selectedDateBirthdays.length}</span>
+                                        <span className="text-xs text-stone-400 font-bold">名が誕生日です 🎂</span>
+                                    </div>
+                                )}
+                            </button>
+                        </div>
+                        
+                        {isDailySummaryExpanded && viewMode === "bookings" && (
+                            <div className="px-4 pb-3 pt-1 flex flex-col gap-1 border-t border-stone-100 bg-stone-50/50 animate-in slide-in-from-top-2 duration-300">
+                                {selectedDateBookings.length > 0 && (
+                                    <div className="flex justify-between items-center text-xs ml-6">
+                                        <span className="text-stone-400 font-bold uppercase tracking-wider">日間客単価</span>
+                                        <span className="font-bold text-stone-700">¥{dailyAverageSpend.toLocaleString()}</span>
+                                    </div>
+                                )}
+                                
+                                <div className="mt-2 pt-1 border-t border-stone-200/30">
+                                    <div className="text-[10px] text-stone-400 font-bold uppercase tracking-widest ml-6 mb-1.5">
+                                        支払い方法別内訳
+                                    </div>
+                                    <div className="flex flex-col gap-1 ml-6">
+                                        {dailySalesByPayment.length > 0 ? (
+                                            dailySalesByPayment.map((item) => (
+                                                <div key={item.name} className="flex justify-between items-center text-xs">
+                                                    <span className="text-stone-500 font-medium">{item.name}</span>
+                                                    <span className="font-bold text-stone-700">¥{item.value.toLocaleString()}</span>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="text-[10px] text-stone-400 italic py-1">売上データがありません</div>
                                         )}
                                     </div>
-                                    <div className="flex items-baseline gap-1 bg-blue-50 px-2 py-1 rounded-lg border border-blue-100">
-                                        <span className="text-lg font-bold text-blue-600">{selectedDateBookings.length}</span>
-                                        <span className="text-[10px] text-blue-400 font-bold">件</span>
-                                    </div>
                                 </div>
-                                <button
-                                    onClick={handleAddClick}
-                                    className="p-1 px-3 bg-stone-100 text-stone-500 rounded-full hover:bg-stone-200 transition-colors"
-                                >
-                                    <Plus className="w-5 h-5" />
-                                </button>
-                            </>
-                        ) : (
-                            <div className="flex items-center gap-2">
-                                <span className="text-xl font-bold text-pink-600">{selectedDateBirthdays.length}</span>
-                                <span className="text-xs text-stone-400 font-bold">名が誕生日です 🎂</span>
                             </div>
                         )}
                     </div>
@@ -590,7 +640,7 @@ export default function CalendarClient({
                                                             <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
-                                                                    handleConvertToVisit(booking.id, booking.price || 0);
+                                                                    handleConvertToVisit(booking.id, booking.price || 0, (booking as any).payment_method);
                                                                 }}
                                                                 className="flex-1 flex items-center justify-center gap-1.5 text-[11px] font-bold text-emerald-700 bg-white border border-emerald-200 hover:bg-emerald-50 py-2 rounded-lg shadow-sm"
                                                             >
@@ -829,6 +879,20 @@ export default function CalendarClient({
                                     className="w-full p-3 bg-amber-50 text-amber-900 border-amber-200 border rounded-xl text-sm font-bold focus:ring-2 focus:ring-amber-500/50 outline-none"
                                     placeholder="0"
                                 />
+                            </div>
+
+                            <div className="col-span-2">
+                                <label className="block text-xs font-bold text-stone-400 mb-1.5 uppercase tracking-wider">支払い方法</label>
+                                <select
+                                    value={formPaymentMethod}
+                                    onChange={(e) => setFormPaymentMethod(e.target.value)}
+                                    className="w-full p-3 bg-stone-50 text-stone-900 border-stone-200 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/50 outline-none"
+                                >
+                                    <option value="現金">現金</option>
+                                    <option value="カード">カード</option>
+                                    <option value="電子マネー">電子マネー</option>
+                                    <option value="その他">その他</option>
+                                </select>
                             </div>
 
                             <div>

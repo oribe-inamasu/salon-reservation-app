@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client'
+// Trigger reload: 2026-03-16 00:30
 // Force rebuild after schema change
 import { PrismaPg } from '@prisma/adapter-pg'
 import { Pool } from 'pg'
