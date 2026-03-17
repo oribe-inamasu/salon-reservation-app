@@ -7,6 +7,14 @@ import { ChevronLeft, Save, Loader2, Trash2 } from "lucide-react";
 import { AttributeLabelSelector } from "@/components/AttributeLabelSelector";
 import type { CustomerLabel } from "@/lib/settings";
 
+interface CustomerData {
+    id: string;
+    name: string;
+    furigana: string;
+    attribute_label?: string | null;
+    [key: string]: string | null | undefined;
+}
+
 type FormSection = {
     title: string;
     fields: {
@@ -92,7 +100,7 @@ export default function EditCustomerClient({
             setCustomerId(id);
             fetch(`/api/customers/${id}`)
                 .then((res) => res.json())
-                .then((data) => {
+                .then((data: CustomerData & { error?: string }) => {
                     if (data.error) {
                         setError(data.error);
                     } else {
@@ -101,7 +109,7 @@ export default function EditCustomerClient({
                         for (const section of formSections) {
                             for (const field of section.fields) {
                                 if (data[field.key]) {
-                                    mapped[field.key] = data[field.key];
+                                    mapped[field.key] = data[field.key] || "";
                                 }
                             }
                         }
@@ -114,7 +122,7 @@ export default function EditCustomerClient({
                     setIsLoading(false);
                 });
         });
-    }, [params]);
+    }, [params, formSections]);
 
     const handleChange = (key: string, value: string) => {
         setFormData((prev) => ({ ...prev, [key]: value }));

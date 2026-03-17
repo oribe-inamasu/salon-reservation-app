@@ -41,6 +41,7 @@ export async function createBooking(data: {
     status?: string;
     staff?: string;
     adjustment_price?: number;
+    payment_method?: string;
 }) {
     try {
         console.log("Creating booking with data in action:", data);
@@ -55,14 +56,16 @@ export async function createBooking(data: {
                 status: data.status || "pending",
                 staff: data.staff || null,
                 adjustment_price: data.adjustment_price !== undefined ? parseInt(String(data.adjustment_price), 10) : 0,
+                payment_method: data.payment_method || null,
             },
         });
         console.log("Booking created successfully:", booking.id);
         revalidatePath("/appointments");
         return { success: true, booking };
-    } catch (error: any) {
+    } catch (error) {
         console.error("Failed to create booking in action:", error);
-        return { success: false, error: error.message || "予約の作成に失敗しました" };
+        const message = error instanceof Error ? error.message : "予約の作成に失敗しました";
+        return { success: false, error: message };
     }
 }
 
@@ -76,6 +79,7 @@ export async function updateBooking(id: string, data: {
     status?: string;
     staff?: string;
     adjustment_price?: number;
+    payment_method?: string;
 }) {
     try {
         console.log(`[Action: updateBooking] Updating booking ${id} with data:`, data);
@@ -96,6 +100,7 @@ export async function updateBooking(id: string, data: {
                 status: data.status !== undefined ? data.status : undefined,
                 staff: data.staff !== undefined ? data.staff : undefined,
                 adjustment_price: adjustment_price !== undefined ? adjustment_price : undefined,
+                payment_method: data.payment_method !== undefined ? data.payment_method : undefined,
             },
             include: { customer: true },
         });
@@ -114,6 +119,7 @@ export async function updateBooking(id: string, data: {
                     price: price !== undefined ? price : null,
                     adjustment_price: adjustment_price !== undefined ? adjustment_price : undefined,
                     staff: data.staff !== undefined ? data.staff : undefined,
+                    payment_method: data.payment_method !== undefined ? data.payment_method : undefined,
                     // If the memo changed, it might affect treatment_content or staff_memo
                     staff_memo: data.memo !== undefined ? data.memo : undefined,
                 },
@@ -141,7 +147,7 @@ export async function deleteBooking(id: string) {
     }
 }
 
-export async function convertToVisit(bookingId: string, price?: number) {
+export async function convertToVisit(bookingId: string, price?: number, payment_method?: string) {
     try {
         const booking = await prisma.booking.findUnique({
             where: { id: bookingId },
@@ -160,7 +166,8 @@ export async function convertToVisit(bookingId: string, price?: number) {
                 treatment_category: booking.treatment_category !== undefined ? booking.treatment_category : null,
                 price: booking.price !== undefined && booking.price !== null ? booking.price : null,
                 staff: booking.staff !== undefined ? booking.staff : null,
-                adjustment_price: (booking as any).adjustment_price || 0,
+                adjustment_price: (booking as { adjustment_price?: number }).adjustment_price || 0,
+                payment_method: payment_method !== undefined ? payment_method : (booking as { payment_method?: string | null }).payment_method || null,
                 bookingId: booking.id, // Link them
             },
         });

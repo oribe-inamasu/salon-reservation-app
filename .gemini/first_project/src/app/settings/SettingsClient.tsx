@@ -7,14 +7,21 @@ import StaffSettingsTab, { StaffMember } from "./tabs/StaffSettingsTab";
 import ServicesSettingsTab, { ServiceCategory } from "./tabs/ServicesSettingsTab";
 import CourseSettingsTab from "./tabs/CourseSettingsTab";
 import OptionsSettingsTab from "./tabs/OptionsSettingsTab";
-import { ServiceCourse, OptionService } from "@/lib/settings";
+import { ServiceCourse, OptionService, ClinicInfo } from "@/lib/settings";
 import LabelSettingsTab, { CustomerLabel } from "./tabs/LabelSettingsTab";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export default function SettingsClient({ initialSettings }: { initialSettings: Record<string, any> }) {
+export interface SettingsData {
+    staff_members?: StaffMember[];
+    service_categories?: ServiceCategory[];
+    service_courses?: ServiceCourse[];
+    option_services?: OptionService[];
+    customer_labels?: CustomerLabel[];
+    clinic_info?: ClinicInfo;
+}
+
+export default function SettingsClient({ initialSettings }: { initialSettings: SettingsData }) {
     const [activeTab, setActiveTab] = useState("staff");
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [settings, setSettings] = useState<Record<string, any>>(initialSettings);
+    const [settings, setSettings] = useState<SettingsData>(initialSettings);
 
     const tabs = [
         { id: "staff", label: "スタッフ", icon: Users },
@@ -24,8 +31,7 @@ export default function SettingsClient({ initialSettings }: { initialSettings: R
         { id: "labels", label: "顧客ラベル", icon: Tags },
     ];
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const handleSaveSettings = async (updates: Record<string, any>) => {
+    const handleSaveSettings = async (updates: SettingsData) => {
         try {
             const res = await fetch("/api/settings", {
                 method: "POST",
@@ -34,7 +40,7 @@ export default function SettingsClient({ initialSettings }: { initialSettings: R
             });
             const result = await res.json();
             if (result.success) {
-                setSettings(prev => ({ ...prev, ...updates }));
+                setSettings((prev: SettingsData) => ({ ...prev, ...updates }));
                 return true;
             }
             return false;
@@ -90,9 +96,9 @@ export default function SettingsClient({ initialSettings }: { initialSettings: R
                         onSave={(data: StaffMember[]) => handleSaveSettings({ staff_members: data })}
                         onSaveClosedDays={(days: number[]) => handleSaveSettings({
                             clinic_info: {
-                                ...settings.clinic_info,
+                                ...(settings.clinic_info || {}),
                                 closedDays: days
-                            }
+                            } as ClinicInfo
                         })}
                     />
                 )}

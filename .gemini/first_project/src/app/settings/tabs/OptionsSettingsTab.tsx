@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, Save, Loader2, Check, Clock, JapaneseYen, PlusCircle, GripVertical } from "lucide-react";
+import { Trash2, Save, Loader2, Check, Clock, JapaneseYen, PlusCircle, GripVertical } from "lucide-react";
 import { OptionService, ServiceCategory } from "@/lib/settings";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 

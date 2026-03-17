@@ -25,14 +25,15 @@ export async function PUT(
         const price = data.price !== undefined && data.price !== "" ? parseInt(String(data.price), 10) : undefined;
         const adjustment_price = data.adjustment_price !== undefined && data.adjustment_price !== "" ? parseInt(String(data.adjustment_price), 10) : undefined;
 
-        const visitData: any = {
-            visit_date: data.visit_date ? new Date(data.visit_date) : undefined,
-            treatment_category: data.treatment_category !== undefined ? data.treatment_category : undefined,
-            treatment_content: data.treatment_content !== undefined ? data.treatment_content : undefined,
+        const visitData = {
+            visit_date: data.visit_date ? new Date(data.visit_date as string) : undefined,
+            treatment_category: data.treatment_category !== undefined ? data.treatment_category as string : undefined,
+            treatment_content: data.treatment_content !== undefined ? data.treatment_content as string : undefined,
             price: price !== undefined ? price : undefined,
-            staff_memo: data.staff_memo !== undefined ? data.staff_memo : undefined,
-            staff: data.staff !== undefined ? data.staff : undefined,
+            staff_memo: data.staff_memo !== undefined ? data.staff_memo as string : undefined,
+            staff: data.staff !== undefined ? data.staff as string : undefined,
             adjustment_price: adjustment_price !== undefined ? adjustment_price : undefined,
+            payment_method: data.payment_method !== undefined ? data.payment_method as string : undefined,
         };
 
         const updatedVisit = await prisma.visitHistory.update({
@@ -54,14 +55,16 @@ export async function PUT(
                     memo: data.staff_memo !== undefined ? data.staff_memo : undefined,
                     staff: data.staff !== undefined ? data.staff : undefined,
                     adjustment_price: adjustment_price !== undefined ? adjustment_price : undefined,
+                    payment_method: data.payment_method !== undefined ? data.payment_method : undefined,
                 }
             });
         }
 
         return NextResponse.json({ success: true, visitId: updatedVisit.id }, { status: 200 });
-    } catch (error: any) {
+    } catch (error) {
         console.error("[API: PUT visit] Error:", error);
-        return NextResponse.json({ success: false, error: "カルテの更新に失敗しました", details: error.message }, { status: 500 });
+        const message = error instanceof Error ? error.message : "Internal Server Error";
+        return NextResponse.json({ success: false, error: "カルテの更新に失敗しました", details: message }, { status: 500 });
     }
 }
 

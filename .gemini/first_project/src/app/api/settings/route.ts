@@ -7,11 +7,10 @@ export async function GET() {
     try {
         const settings = await prisma.appSetting.findMany();
         // Return a key-value map for easy access on the client
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const settingsMap = settings.reduce((acc, curr) => {
             acc[curr.key] = curr.value;
             return acc;
-        }, {} as Record<string, any>);
+        }, {} as Record<string, unknown>);
 
         return NextResponse.json({ success: true, settings: settingsMap });
     } catch (error) {
@@ -22,13 +21,11 @@ export async function GET() {
 
 export async function POST(req: Request) {
     try {
-        // Expected format: Record<string, any> (e.g. { "staff_members": [...], "service_categories": [...] })
-        const data = await req.json();
+        const data = await req.json() as Record<string, unknown>;
 
-        // Update or create each setting
         for (const [key, value] of Object.entries(data)) {
-            // Prisma Json typing requires specific structure, standard any works fine with V8 objects.
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            // Prisma JsonValue requires specific typing, eslint-disable is used to handle generic JSON data safely
+            /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
             const jsonValue = value as any;
 
             await prisma.appSetting.upsert({

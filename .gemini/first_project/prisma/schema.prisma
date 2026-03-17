@@ -49,6 +49,7 @@ model VisitHistory {
   bookingId          String?  @unique
   staff              String?
   adjustment_price   Int      @default(0)
+  payment_method     String?
   booking            Booking? @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   customer           Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 }
@@ -66,6 +67,7 @@ model Booking {
   price              Int?
   staff              String?
   adjustment_price   Int           @default(0)
+  payment_method     String?
   customer           Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
   visitHistory       VisitHistory?
 }

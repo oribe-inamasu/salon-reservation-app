@@ -38,5 +38,5 @@ export default async function EditVisitPage({
     };
     const { serviceNames, staffNames, serviceCourses, optionServices } = await getAppSettings();
 
-    return <EditVisitClient visit={serializedVisit} serviceNames={serviceNames} staffNames={staffNames} serviceCourses={serviceCourses} optionServices={optionServices} />;
+    return <EditVisitClient visit={serializedVisit} staffNames={staffNames} serviceCourses={serviceCourses} optionServices={optionServices} />;
 }

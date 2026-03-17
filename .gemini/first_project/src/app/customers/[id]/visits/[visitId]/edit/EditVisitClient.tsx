@@ -3,14 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Save, Loader2, CheckCircle, Trash2, Clock, JapaneseYen, PlusCircle, Check } from "lucide-react";
+import { ChevronLeft, Save, Loader2, CheckCircle, Trash2, Clock, PlusCircle, Check } from "lucide-react";
 import { ServiceCourse, OptionService } from "@/lib/settings";
-import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
-
-function cn(...inputs: ClassValue[]) {
-    return twMerge(clsx(inputs));
-}
 
 type SerializedVisit = {
     id: string;
@@ -22,6 +16,7 @@ type SerializedVisit = {
     staff: string | null;
     staff_memo: string | null;
     adjustment_price: number;
+    payment_method: string | null;
     customer: {
         name: string;
     };
@@ -29,13 +24,11 @@ type SerializedVisit = {
 
 export default function EditVisitClient({
     visit,
-    serviceNames,
     staffNames,
     serviceCourses,
     optionServices,
 }: {
     visit: SerializedVisit;
-    serviceNames: string[];
     staffNames: string[];
     serviceCourses: ServiceCourse[];
     optionServices: OptionService[];
@@ -61,6 +54,7 @@ export default function EditVisitClient({
     const [adjustmentPrice, setAdjustmentPrice] = useState(String(visit.adjustment_price || 0));
     const [staff, setStaff] = useState(visit.staff || "");
     const [staffMemo, setStaffMemo] = useState(visit.staff_memo || "");
+    const [paymentMethod, setPaymentMethod] = useState(visit.payment_method || "現金");
     const [selectedCourseId, setSelectedCourseId] = useState(() => {
         const course = serviceCourses.find(c => c.name === visit.treatment_category || c.category === visit.treatment_category);
         return course?.id || "";
@@ -91,6 +85,7 @@ export default function EditVisitClient({
                     staff: staff,
                     staff_memo: staffMemo,
                     adjustment_price: adjustmentPrice,
+                    payment_method: paymentMethod,
                 }),
             });
 
@@ -350,6 +345,21 @@ export default function EditVisitClient({
                                 className="w-full p-3 bg-amber-50 border-amber-200 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-shadow"
                                 placeholder="0"
                             />
+                        </div>
+
+                        {/* Payment Method */}
+                        <div className="space-y-1.5 pt-2 border-t">
+                            <label className="text-sm font-medium text-foreground">支払い方法</label>
+                            <select
+                                value={paymentMethod}
+                                onChange={(e) => setPaymentMethod(e.target.value)}
+                                className="w-full p-3 bg-muted border-none rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
+                            >
+                                <option value="現金">現金</option>
+                                <option value="カード">カード</option>
+                                <option value="電子マネー">電子マネー</option>
+                                <option value="その他">その他</option>
+                            </select>
                         </div>
 
                         {/* 7. Memo */}

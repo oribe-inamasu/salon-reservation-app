@@ -32,6 +32,7 @@ export async function POST(
             status: "completed",
             staff: data.staff || null,
             adjustment_price: data.adjustment_price ? parseInt(String(data.adjustment_price), 10) : 0,
+            payment_method: data.payment_method || null,
         };
         console.log("Creating booking with data:", bookingData);
         // 1. Create a placeholder booking
@@ -48,6 +49,7 @@ export async function POST(
             staff_memo: data.staff_memo || null,
             staff: data.staff || null,
             adjustment_price: data.adjustment_price ? parseInt(String(data.adjustment_price), 10) : 0,
+            payment_method: data.payment_method || null,
             bookingId: booking.id, // Link them
         };
         console.log("Creating visit with data:", visitData);
@@ -57,8 +59,9 @@ export async function POST(
         });
 
         return NextResponse.json({ success: true, visitId: visit.id }, { status: 201 });
-    } catch (error: any) {
+    } catch (error) {
         console.error("Visit creation error:", error);
-        return NextResponse.json({ success: false, error: "カルテの保存に失敗しました", details: error.message }, { status: 500 });
+        const message = error instanceof Error ? error.message : "カルテの保存に失敗しました";
+        return NextResponse.json({ success: false, error: message }, { status: 500 });
     }
 }

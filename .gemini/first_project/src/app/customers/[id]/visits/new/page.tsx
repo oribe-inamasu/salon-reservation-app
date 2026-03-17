@@ -15,5 +15,5 @@ export default async function NewVisitPage({ params }: { params: Promise<{ id: s
         return <div>顧客が見つかりません</div>;
     }
 
-    return <NewVisitClient params={params} customer={customer} serviceNames={serviceNames} staffNames={staffNames} serviceCourses={serviceCourses} optionServices={optionServices} />;
+    return <NewVisitClient params={params} customer={customer} staffNames={staffNames} serviceCourses={serviceCourses} optionServices={optionServices} />;
 }

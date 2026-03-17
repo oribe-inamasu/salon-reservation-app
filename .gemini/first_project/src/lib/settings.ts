@@ -96,10 +96,10 @@ const DEFAULT_CLINIC_INFO: ClinicInfo = {
 export async function getAppSettings() {
     try {
         const settings = await prisma.appSetting.findMany();
-        const settingsMap = settings.reduce((acc: Record<string, any>, curr) => {
+        const settingsMap = settings.reduce((acc: Record<string, unknown>, curr) => {
             acc[curr.key] = curr.value;
             return acc;
-        }, {} as Record<string, any>);
+        }, {} as Record<string, unknown>);
 
         return {
             staffMembers: (settingsMap.staff_members as StaffMember[]) || DEFAULT_STAFF,
@@ -119,12 +119,12 @@ export async function getAppSettings() {
             serviceNames: ((settingsMap.service_categories as ServiceCategory[]) || DEFAULT_SERVICES).map(s => s.name),
             customerLabels: (settingsMap.customer_labels as CustomerLabel[]) || DEFAULT_LABELS,
             clinicInfo: (() => {
-                const info = settingsMap.clinic_info as any;
+                const info = settingsMap.clinic_info as Record<string, unknown> | undefined;
                 if (!info) return DEFAULT_CLINIC_INFO;
                 return {
                     ...info,
                     closedDays: Array.isArray(info.closedDays) ? info.closedDays : DEFAULT_CLINIC_INFO.closedDays
-                } as ClinicInfo;
+                } as unknown as ClinicInfo;
             })(),
         };
     } catch (error) {

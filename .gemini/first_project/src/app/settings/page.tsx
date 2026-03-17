@@ -1,15 +1,14 @@
 import prisma from "@/lib/prisma";
-import SettingsClient from "./SettingsClient";
+import SettingsClient, { SettingsData } from "./SettingsClient";
 
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
     const settings = await prisma.appSetting.findMany();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const settingsMap = settings.reduce((acc, curr) => {
         acc[curr.key] = curr.value;
         return acc;
-    }, {} as Record<string, any>);
+    }, {} as Record<string, unknown>);
 
-    return <SettingsClient initialSettings={settingsMap} />;
+    return <SettingsClient initialSettings={settingsMap as unknown as SettingsData} />;
 }
