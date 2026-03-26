@@ -9,7 +9,7 @@ import CourseSettingsTab from "./tabs/CourseSettingsTab";
 import OptionsSettingsTab from "./tabs/OptionsSettingsTab";
 import { ServiceCourse, OptionService, ClinicInfo } from "@/lib/settings";
 import LabelSettingsTab, { CustomerLabel } from "./tabs/LabelSettingsTab";
-import { signOutAction } from "../(auth)/login/actions";
+import { signOut } from "next-auth/react";
 
 export interface SettingsData {
     staff_members?: StaffMember[];
@@ -135,7 +135,7 @@ export default function SettingsClient({ initialSettings }: { initialSettings: S
                     <button
                         onClick={async () => {
                             if (confirm("ログアウトしますか？")) {
-                                await signOutAction();
+                                await signOut({ callbackUrl: "/login" });
                             }
                         }}
                         className="w-full flex items-center justify-center gap-2 py-4 px-4 bg-destructive/10 text-destructive font-bold rounded-2xl hover:bg-destructive hover:text-destructive-foreground transition-all border border-destructive/20"
