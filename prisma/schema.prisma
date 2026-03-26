@@ -1,0 +1,130 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String    @id @default(uuid())
+  name          String?
+  email         String?   @unique
+  password      String?
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Account {
+  id                String  @id @default(uuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Customer {
+  id                     String         @id @default(uuid())
+  name                   String
+  furigana               String
+  birth_date             String?
+  occupation             String?
+  address                String?
+  phone_number           String?
+  pain_area              String?
+  symptoms               String?
+  when_symptoms_felt     String?
+  visited_hospital       String?
+  hospital_diagnosis     String?
+  possible_cause         String?
+  desired_duration       String?
+  desired_treatment      String?
+  current_treatment      String?
+  past_injury            String?
+  massage_frequency      String?
+  experienced_momikaeshi String?
+  possible_pregnancy     String?
+  referral_source        String?
+  additional_concerns    String?
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+  attribute_label        String?
+  bookings               Booking[]
+  visitHistories         VisitHistory[]
+}
+
+model VisitHistory {
+  id                 String   @id @default(uuid())
+  customerId         String
+  visit_date         DateTime @default(now())
+  treatment_category String?
+  treatment_content  String?
+  price              Int?
+  staff_memo         String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  bookingId          String?  @unique
+  staff              String?
+  adjustment_price   Int      @default(0)
+  payment_method     String?
+  booking            Booking? @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  customer           Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+}
+
+model Booking {
+  id                 String        @id @default(uuid())
+  customerId         String
+  start_time         DateTime
+  end_time           DateTime
+  treatment_category String?
+  treatment_content  String?
+  memo               String?
+  status             String        @default("scheduled")
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  price              Int?
+  staff              String?
+  adjustment_price   Int           @default(0)
+  payment_method     String?
+  customer           Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  visitHistory       VisitHistory?
+}
+
+model AppSetting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
