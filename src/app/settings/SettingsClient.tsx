@@ -9,6 +9,7 @@ import CourseSettingsTab from "./tabs/CourseSettingsTab";
 import OptionsSettingsTab from "./tabs/OptionsSettingsTab";
 import { ServiceCourse, OptionService, ClinicInfo } from "@/lib/settings";
 import LabelSettingsTab, { CustomerLabel } from "./tabs/LabelSettingsTab";
+import { signOutAction } from "../(auth)/login/actions";
 
 export interface SettingsData {
     staff_members?: StaffMember[];
@@ -134,7 +135,6 @@ export default function SettingsClient({ initialSettings }: { initialSettings: S
                     <button
                         onClick={async () => {
                             if (confirm("ログアウトしますか？")) {
-                                const { signOutAction } = await import("../(auth)/login/actions");
                                 await signOutAction();
                             }
                         }}
