@@ -20,9 +20,22 @@ export interface SettingsData {
     clinic_info?: ClinicInfo;
 }
 
-export default function SettingsClient({ initialSettings }: { initialSettings: SettingsData }) {
+export interface UserData {
+    id: string;
+    name: string | null;
+    email: string | null;
+}
+
+export default function SettingsClient({ 
+    initialSettings, 
+    initialUsers 
+}: { 
+    initialSettings: SettingsData;
+    initialUsers: UserData[];
+}) {
     const [activeTab, setActiveTab] = useState("staff");
     const [settings, setSettings] = useState<SettingsData>(initialSettings);
+    const [users] = useState<UserData[]>(initialUsers);
 
     const tabs = [
         { id: "staff", label: "スタッフ", icon: Users },
@@ -94,6 +107,7 @@ export default function SettingsClient({ initialSettings }: { initialSettings: S
                     <StaffSettingsTab
                         initialData={settings.staff_members as StaffMember[]}
                         initialClosedDays={settings.clinic_info?.closedDays as number[]}
+                        users={users}
                         onSave={(data: StaffMember[]) => handleSaveSettings({ staff_members: data })}
                         onSaveClosedDays={(days: number[]) => handleSaveSettings({
                             clinic_info: {

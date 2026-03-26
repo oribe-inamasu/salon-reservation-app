@@ -1,9 +1,18 @@
 import { getAppSettings } from "@/lib/settings";
 import SettingsClient, { SettingsData } from "./SettingsClient";
+import prisma from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
+    const [settingsData, users] = await Promise.all([
+        getAppSettings(),
+        prisma.user.findMany({
+            select: { id: true, name: true, email: true },
+            orderBy: { createdAt: "asc" }
+        })
+    ]);
+
     const { 
         staffMembers, 
         serviceCategories, 
@@ -11,7 +20,7 @@ export default async function SettingsPage() {
         optionServices, 
         customerLabels, 
         clinicInfo 
-    } = await getAppSettings();
+    } = settingsData;
 
     const initialSettings: SettingsData = {
         staff_members: staffMembers,
@@ -22,5 +31,5 @@ export default async function SettingsPage() {
         clinic_info: clinicInfo
     };
 
-    return <SettingsClient initialSettings={initialSettings} />;
+    return <SettingsClient initialSettings={initialSettings} initialUsers={users} />;
 }
