@@ -88,7 +88,6 @@ export async function POST() {
         // Postgres supports createMany
         await prisma.customer.createMany({
             data: customersData,
-            skipDuplicates: true,
         });
 
         // Fetch the created customers to get their IDs for visits
@@ -116,7 +115,6 @@ export async function POST() {
 
         await prisma.visitHistory.createMany({
             data: visitsData,
-            skipDuplicates: true,
         });
 
         return NextResponse.json({ 
