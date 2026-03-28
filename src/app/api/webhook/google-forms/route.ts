@@ -35,9 +35,54 @@ export async function POST(req: Request) {
             },
         });
 
-        const isLineSent = await sendLineNotification(
-            `🔔 新規の予診票が届きました！\n\nお名前: ${customer.name} 様\n症状: ${customer.pain_area || "未入力"}\n\nWebアプリから詳細をご確認ください。`
-        );
+        const messageText = `🔔 新規の予診票が届きました！
+
+【基本情報】
+お名前: ${customer.name} 様 (${customer.furigana})
+生年月日: ${customer.birth_date || "未入力"}
+電話番号: ${customer.phone_number || "未入力"}
+ご職業: ${customer.occupation || "未入力"}
+ご住所: ${customer.address || "未入力"}
+
+【問診内容】
+痛みや違和感のある部分:
+${customer.pain_area || "未入力"}
+
+どんな症状ですか？:
+${customer.symptoms || "未入力"}
+
+どんなときに異変を感じますか？:
+${customer.when_symptoms_felt || "未入力"}
+
+病院で診察を受けましたか？: ${customer.visited_hospital || "未入力"}
+診断名: ${customer.hospital_diagnosis || "未入力"}
+
+考えられる原因はありますか？:
+${customer.possible_cause || "未入力"}
+
+【ご希望内容】
+ご希望の施術時間: ${customer.desired_duration || "未入力"}
+ご希望の施術内容: ${customer.desired_treatment || "未入力"}
+
+【既往歴・体質など】
+現在治療中の怪我や病気:
+${customer.current_treatment || "未入力"}
+
+これまでに大きなケガや病気をしたこと:
+${customer.past_injury || "未入力"}
+
+マッサージ等の頻度: ${customer.massage_frequency || "未入力"}
+揉み返しが出たこと: ${customer.experienced_momikaeshi || "未入力"}
+妊娠している可能性: ${customer.possible_pregnancy || "未入力"}
+
+当院を知ったきっかけ: ${customer.referral_source || "未入力"}
+
+【身体で不安に思っていること、その他】
+${customer.additional_concerns || "未入力"}
+
+🌐 Webアプリからカルテ一覧をご確認ください。`;
+
+        const isLineSent = await sendLineNotification(messageText);
 
         return NextResponse.json({ success: true, customerId: customer.id, lineNotified: isLineSent }, { status: 200 });
 
