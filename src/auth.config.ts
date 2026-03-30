@@ -13,8 +13,9 @@ export const authConfig = {
             const isOnLoginPage = nextUrl.pathname.startsWith("/login")
             const isApiAuthRoute = nextUrl.pathname.startsWith("/api/auth")
             const isApiSeedRoute = nextUrl.pathname.startsWith("/api/seed")
+            const isWebhookRoute = nextUrl.pathname.startsWith("/api/webhook")
 
-            if (isApiAuthRoute || isApiSeedRoute) return true
+            if (isApiAuthRoute || isApiSeedRoute || isWebhookRoute) return true
 
             if (isOnLoginPage) {
                 if (isLoggedIn) return Response.redirect(new URL("/", nextUrl))

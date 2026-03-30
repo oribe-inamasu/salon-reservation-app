@@ -640,7 +640,7 @@ export default function CalendarClient({
                                                     </div>
 
                                                     {booking.memo && (
-                                                        <div className="text-xs text-stone-500 italic border-l-2 border-stone-200 pl-2 py-0.5">
+                                                        <div className="text-xs text-stone-500 italic border-l-2 border-stone-200 pl-2 py-0.5 whitespace-pre-wrap">
                                                             {booking.memo}
                                                         </div>
                                                     )}

@@ -233,7 +233,7 @@ export default function CustomerDetailClient({ customer }: { customer: Serialize
                                 {customer.additional_concerns && (
                                     <div>
                                         <dt className="text-xs text-muted-foreground mb-1">自由記述 / お身体で不安なこと</dt>
-                                        <dd className="text-sm font-medium bg-muted p-3 rounded-xl mt-1 leading-relaxed">
+                                        <dd className="text-sm font-medium bg-muted p-3 rounded-xl mt-1 leading-relaxed whitespace-pre-wrap">
                                             {customer.additional_concerns}
                                         </dd>
                                     </div>
@@ -289,7 +289,7 @@ export default function CustomerDetailClient({ customer }: { customer: Serialize
                                             {visit.staff_memo && (
                                                 <div className="text-sm text-muted-foreground bg-amber-50 dark:bg-amber-900/10 p-2 rounded-lg border border-amber-100 dark:border-amber-900/30">
                                                     <p className="font-bold text-xs text-amber-600 dark:text-amber-500 mb-1">スタッフメモ (非公開)</p>
-                                                    {visit.staff_memo}
+                                                    <div className="whitespace-pre-wrap">{visit.staff_memo}</div>
                                                 </div>
                                             )}
                                         </div>
