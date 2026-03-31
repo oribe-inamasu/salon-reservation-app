@@ -2,7 +2,8 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { ChevronLeft, Edit3, Calendar, Clock, FileText, Phone, MapPin, Plus, TrendingUp, Award } from "lucide-react";
+import { ChevronLeft, Edit3, Calendar, Clock, FileText, Phone, MapPin, Plus, TrendingUp, Award, PlusCircle } from "lucide-react";
+import { OptionService } from "@/lib/settings";
 
 function calculateAge(birthDateStr: string | null): number | null {
     if (!birthDateStr) return null;
@@ -53,10 +54,17 @@ type SerializedCustomer = {
         staff_memo: string | null;
         createdAt: string;
         updatedAt: string;
+        options?: string | null;
     }>;
 };
 
-export default function CustomerDetailClient({ customer }: { customer: SerializedCustomer }) {
+export default function CustomerDetailClient({
+    customer,
+    optionServices
+}: {
+    customer: SerializedCustomer,
+    optionServices: OptionService[]
+}) {
     const [activeTab, setActiveTab] = useState<"intake" | "history">("intake");
 
     const totalVisits = customer.visitHistories.length;
@@ -284,6 +292,27 @@ export default function CustomerDetailClient({ customer }: { customer: Serialize
                                                             担当: {visit.staff}
                                                         </span>
                                                     )}
+                                                </div>
+                                            )}
+                                            {visit.options && (
+                                                <div className="flex flex-wrap gap-1 mb-3">
+                                                    {(() => {
+                                                        try {
+                                                            const selectedOptionIds = JSON.parse(visit.options) as string[];
+                                                            return selectedOptionIds.map((optId, idx) => {
+                                                                const opt = optionServices.find(o => o.id === optId);
+                                                                if (!opt) return null;
+                                                                return (
+                                                                    <span key={`${optId}-${idx}`} className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 text-[10px] font-bold rounded-full border border-blue-100 dark:border-blue-800">
+                                                                        <PlusCircle className="w-2.5 h-2.5" />
+                                                                        {opt.name}
+                                                                    </span>
+                                                                );
+                                                            });
+                                                        } catch (e) {
+                                                            return null;
+                                                        }
+                                                    })()}
                                                 </div>
                                             )}
                                             {visit.staff_memo && (

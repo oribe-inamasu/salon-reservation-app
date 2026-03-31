@@ -33,6 +33,7 @@ export async function POST(
             staff: data.staff || null,
             adjustment_price: data.adjustment_price ? parseInt(String(data.adjustment_price), 10) : 0,
             payment_method: data.payment_method || null,
+            options: data.options || null,
         };
         console.log("Creating booking with data:", bookingData);
         // 1. Create a placeholder booking
@@ -50,6 +51,7 @@ export async function POST(
             staff: data.staff || null,
             adjustment_price: data.adjustment_price ? parseInt(String(data.adjustment_price), 10) : 0,
             payment_method: data.payment_method || null,
+            options: data.options || null,
             bookingId: booking.id, // Link them
         };
         console.log("Creating visit with data:", visitData);

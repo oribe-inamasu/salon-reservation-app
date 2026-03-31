@@ -34,7 +34,8 @@ export default async function EditVisitPage({
         payment_method: visit.payment_method,
         customer: {
             name: visit.customer.name,
-        }
+        },
+        options: visit.options,
     };
     const { serviceNames, staffNames, serviceCourses, optionServices } = await getAppSettings();
 

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, Save, Loader2, CheckCircle, Clock, PlusCircle, Check } from "lucide-react";
 import { ServiceCourse, OptionService } from "@/lib/settings";
+import { calculateTotalPrice } from "@/lib/utils";
 
 type CustomerSummary = {
     id: string;
@@ -27,7 +28,7 @@ export default function NewVisitClient({
     const router = useRouter();
     const [customerId, setCustomerId] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>([]);
+    const [selectedOptions, setSelectedOptions] = useState<{ id: string, optionId: string }[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
 
@@ -49,17 +50,27 @@ export default function NewVisitClient({
         params.then(({ id }) => setCustomerId(id));
     }, [params]);
 
-    const toggleOption = (option: OptionService) => {
-        const isSelected = selectedOptionIds.includes(option.id);
-        const newSelected = isSelected
-            ? selectedOptionIds.filter(id => id !== option.id)
-            : [...selectedOptionIds, option.id];
+// ... (inside the component)
 
-        setSelectedOptionIds(newSelected);
+    const updatePrice = (courseId: string, options: { optionId: string }[], adj: string) => {
+        const total = calculateTotalPrice(courseId, options, adj, serviceCourses, optionServices);
+        setPrice(String(total));
+    };
 
-        // Update Price
-        const priceDiff = isSelected ? -option.price : option.price;
-        setPrice(prev => String(Math.max(0, parseInt(prev || "0") + priceDiff)));
+    const addOption = () => {
+        setSelectedOptions(prev => [...prev, { id: crypto.randomUUID(), optionId: "" }]);
+    };
+
+    const removeOption = (id: string) => {
+        const newOptions = selectedOptions.filter(o => o.id !== id);
+        setSelectedOptions(newOptions);
+        updatePrice(selectedCourseId, newOptions, adjustmentPrice);
+    };
+
+    const updateOption = (id: string, newOptionId: string) => {
+        const newOptions = selectedOptions.map(o => o.id === id ? { ...o, optionId: newOptionId } : o);
+        setSelectedOptions(newOptions);
+        updatePrice(selectedCourseId, newOptions, adjustmentPrice);
     };
 
     const handleSubmit = async (e?: React.FormEvent) => {
@@ -85,6 +96,7 @@ export default function NewVisitClient({
                     staff_memo: staffMemo,
                     adjustment_price: adjustmentPrice,
                     payment_method: paymentMethod,
+                    options: selectedOptions.length > 0 ? JSON.stringify(selectedOptions.map(o => o.optionId).filter(id => id !== "")) : null,
                 }),
             });
 
@@ -210,7 +222,8 @@ export default function NewVisitClient({
                                     const course = serviceCourses.find(c => c.id === courseId);
                                     if (course) {
                                         setTreatmentCategory(course.category || course.name);
-                                        setPrice(String(course.price));
+                                        setTreatmentContent(course.name);
+                                        updatePrice(courseId, selectedOptions, adjustmentPrice);
                                     }
                                 }}
                                 className="w-full bg-transparent border-none rounded-lg text-sm font-bold focus:ring-0 outline-none"
@@ -230,43 +243,39 @@ export default function NewVisitClient({
                                 <PlusCircle className="w-3 h-3" /> オプション・割引
                             </label>
                             <div className="space-y-3 mt-1">
-                                <select
-                                    value=""
-                                    onChange={(e) => {
-                                        const optionId = e.target.value;
-                                        const option = optionServices.find(o => o.id === optionId);
-                                        if (option) toggleOption(option);
-                                    }}
-                                    className="w-full bg-white border border-amber-200 rounded-lg text-sm font-bold focus:ring-2 focus:ring-amber-500/50 outline-none p-2"
-                                >
-                                    <option value="">オプション・割引を選択</option>
-                                    {optionServices.map(option => (
-                                        <option key={option.id} value={option.id}>
-                                            {selectedOptionIds.includes(option.id) ? "✓ " : ""}{option.name} ({option.price > 0 ? "+" : ""}{option.price.toLocaleString()}円)
-                                        </option>
-                                    ))}
-                                </select>
-
-                                {selectedOptionIds.length > 0 && (
-                                    <div className="flex flex-wrap gap-2">
-                                        {selectedOptionIds.map(id => {
-                                            const option = optionServices.find(o => o.id === id);
-                                            if (!option) return null;
-                                            return (
-                                                <button
-                                                    key={id}
-                                                    type="button"
-                                                    onClick={() => toggleOption(option)}
-                                                    className="flex items-center gap-1 px-2 py-1.5 bg-primary text-primary-foreground rounded-lg text-[11px] font-bold shadow-sm hover:opacity-90 transition-opacity"
-                                                >
-                                                    <Check className="w-3 h-3" />
-                                                    {option.name}
-                                                    <span className="ml-1 opacity-70 text-[9px]">×</span>
-                                                </button>
-                                            );
-                                        })}
+                                {selectedOptions.map((opt, index) => (
+                                    <div key={opt.id} className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full">
+                                        <select
+                                            value={opt.optionId}
+                                            onChange={(e) => updateOption(opt.id, e.target.value)}
+                                            className="flex-1 w-full bg-white border border-amber-200 rounded-lg text-sm font-bold focus:ring-2 focus:ring-amber-500/50 outline-none p-2"
+                                        >
+                                            <option value="">オプション・割引を選択</option>
+                                            {optionServices.map(option => (
+                                                <option key={option.id} value={option.id}>
+                                                    {option.name} ({option.price > 0 ? "+" : ""}{option.price.toLocaleString()}円)
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <button
+                                            type="button"
+                                            onClick={() => removeOption(opt.id)}
+                                            className="p-2 self-end sm:self-auto bg-stone-100/50 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100"
+                                        >
+                                            <span className="sm:hidden text-xs font-bold mr-1">削除</span>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                                        </button>
                                     </div>
-                                )}
+                                ))}
+                                
+                                <button
+                                    type="button"
+                                    onClick={addOption}
+                                    className="w-full py-2.5 mt-2 border-2 border-dashed border-amber-200 text-amber-700/70 font-bold rounded-lg hover:border-amber-400 hover:text-amber-700 hover:bg-amber-100/50 transition-colors flex items-center justify-center gap-2 text-sm"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                                    オプションを追加
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -283,9 +292,8 @@ export default function NewVisitClient({
                                 value={adjustmentPrice}
                                 onChange={(e) => {
                                     const newVal = e.target.value;
-                                    const diff = (parseInt(newVal) || 0) - (parseInt(adjustmentPrice) || 0);
                                     setAdjustmentPrice(newVal);
-                                    setPrice(prev => String(Math.max(0, parseInt(prev || "0") + diff)));
+                                    updatePrice(selectedCourseId, selectedOptions, newVal);
                                 }}
                                 className="w-full p-3 bg-amber-50 border-amber-200 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-shadow"
                                 placeholder="0"

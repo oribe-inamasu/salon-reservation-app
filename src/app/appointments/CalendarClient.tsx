@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
     format,
     addMonths,
@@ -33,6 +33,7 @@ import { deleteBooking, updateBooking, convertToVisit, createBooking, revertVisi
 import { CheckCircle2, ChevronRight as ChevronRightIcon, RotateCcw } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { calculateTotalPrice } from "@/lib/utils";
 
 function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
@@ -56,6 +57,7 @@ type BookingWithCustomer = {
     status: string;
     adjustment_price: number;
     payment_method?: string | null;
+    options?: string | null;
 };
 
 type CustomerShort = {
@@ -88,8 +90,17 @@ export default function CalendarClient({
     serviceCourses: ServiceCourse[];
     optionServices: OptionService[];
 }) {
-    const [currentMonth, setCurrentMonth] = useState(new Date());
-    const [selectedDate, setSelectedDate] = useState(new Date());
+    // Use null for initial dates to avoid hydration mismatch
+    const [currentMonth, setCurrentMonth] = useState<Date>(new Date(2000, 0, 1)); // Placeholder
+    const [selectedDate, setSelectedDate] = useState<Date>(new Date(2000, 0, 1)); // Placeholder
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setCurrentMonth(new Date());
+        setSelectedDate(new Date());
+        setIsMounted(true);
+    }, []);
+
     const [bookings, setBookings] = useState<BookingWithCustomer[]>(initialBookings.map(b => ({
         ...b,
         start_time: new Date(b.start_time),
@@ -116,7 +127,7 @@ export default function CalendarClient({
     const [formAdjustment, setFormAdjustment] = useState("0");
     const [formPaymentMethod, setFormPaymentMethod] = useState<string>("現金");
     const [selectedCourseId, setSelectedCourseId] = useState("");
-    const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>([]);
+    const [selectedOptions, setSelectedOptions] = useState<{ id: string, optionId: string }[]>([]);
 
     // Calendar logic
     const monthStart = startOfMonth(currentMonth);
@@ -206,7 +217,7 @@ export default function CalendarClient({
         setFormAdjustment("0");
         setFormPaymentMethod("現金");
         setSelectedCourseId("");
-        setSelectedOptionIds([]);
+        setSelectedOptions([]);
         setIsModalOpen(true);
     };
 
@@ -228,36 +239,71 @@ export default function CalendarClient({
                        serviceCourses.find(c => c.category === booking.treatment_category);
         setSelectedCourseId(course?.id || "");
 
-        // Set initial options based on memo content (tags like [OptionName])
-        const initialOptions = optionServices
-            .filter(opt => booking.memo?.includes(`[${opt.name}]`))
-            .map(opt => opt.id);
-        setSelectedOptionIds(initialOptions);
+        // Parse options from the new options field, or fallback to memo for old data
+        let initialOptions: string[] = [];
+        if (booking.options) {
+            try {
+                initialOptions = JSON.parse(booking.options);
+            } catch (e) {
+                console.error("Failed to parse booking options:", e);
+            }
+        } else {
+            initialOptions = optionServices
+                .filter(opt => booking.memo?.includes(`[${opt.name}]`))
+                .map(opt => opt.id);
+        }
+        
+        setSelectedOptions(initialOptions.map(id => ({ id: crypto.randomUUID(), optionId: id })));
 
         setIsModalOpen(true);
     };
 
-    const toggleOption = (option: OptionService) => {
-        const isSelected = selectedOptionIds.includes(option.id);
-        const newSelected = isSelected
-            ? selectedOptionIds.filter(id => id !== option.id)
-            : [...selectedOptionIds, option.id];
+    const addOption = () => {
+        setSelectedOptions(prev => [...prev, { id: crypto.randomUUID(), optionId: "" }]);
+    };
 
-        setSelectedOptionIds(newSelected);
+// ... (inside the component)
 
-        // Update Price
-        const priceDiff = isSelected ? -option.price : option.price;
-        setFormPrice(prev => String(Math.max(0, parseInt(prev || "0") + priceDiff)));
+    const updatePrice = (courseId: string, options: { optionId: string }[], adj: string) => {
+        const total = calculateTotalPrice(courseId, options, adj, serviceCourses, optionServices);
+        setFormPrice(String(total));
+    };
 
-        // Update Time
-        if (option.duration !== 0) {
-            const timeDiff = isSelected ? -option.duration : option.duration;
+    const removeOption = (id: string) => {
+        const optionItem = selectedOptions.find(o => o.id === id);
+        if (optionItem && optionItem.optionId) {
+            const option = optionServices.find(o => o.id === optionItem.optionId);
+            if (option && option.duration !== 0) {
+                const [h, m] = formEndTime.split(":").map(Number);
+                const time = new Date();
+                time.setHours(h, m, 0, 0);
+                const newTime = new Date(time.getTime() - option.duration * 60000);
+                setFormEndTime(format(newTime, "HH:mm"));
+            }
+        }
+        const newOptions = selectedOptions.filter(o => o.id !== id);
+        setSelectedOptions(newOptions);
+        updatePrice(selectedCourseId, newOptions, formAdjustment);
+    };
+
+    const updateOption = (id: string, newOptionId: string) => {
+        const optionItem = selectedOptions.find(o => o.id === id);
+        const oldOption = optionItem?.optionId ? optionServices.find(o => o.id === optionItem.optionId) : null;
+        const newOption = newOptionId ? optionServices.find(o => o.id === newOptionId) : null;
+
+        const oldDuration = oldOption ? oldOption.duration : 0;
+        const newDuration = newOption ? newOption.duration : 0;
+        if (oldDuration !== newDuration) {
             const [h, m] = formEndTime.split(":").map(Number);
             const time = new Date();
             time.setHours(h, m, 0, 0);
-            const newTime = new Date(time.getTime() + timeDiff * 60000);
+            const newTime = new Date(time.getTime() - oldDuration * 60000 + newDuration * 60000);
             setFormEndTime(format(newTime, "HH:mm"));
         }
+
+        const newOptions = selectedOptions.map(o => o.id === id ? { ...o, optionId: newOptionId } : o);
+        setSelectedOptions(newOptions);
+        updatePrice(selectedCourseId, newOptions, formAdjustment);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -279,6 +325,8 @@ export default function CalendarClient({
         end.setHours(endH, endM, 0, 0);
 
         const price = parseInt(formPrice) || 0;
+        const optionIdList = selectedOptions.map(o => o.optionId).filter(id => id !== "");
+        const optionsJson = optionIdList.length > 0 ? JSON.stringify(optionIdList) : null;
 
         if (formMode === "create") {
             const result = await createBooking({
@@ -292,6 +340,7 @@ export default function CalendarClient({
                 payment_method: formPaymentMethod,
                 staff: formStaff || undefined,
                 memo: formMemo,
+                options: optionsJson ?? undefined,
             });
 
             if (result.success && result.booking) {
@@ -319,6 +368,7 @@ export default function CalendarClient({
                 payment_method: formPaymentMethod,
                 staff: formStaff || undefined,
                 memo: formMemo,
+                options: optionsJson ?? undefined,
             });
 
             if (result.success && result.booking) {
@@ -330,6 +380,7 @@ export default function CalendarClient({
                     customer
                 } as unknown as BookingWithCustomer : b));
                 setIsModalOpen(false);
+                setEditingId(null);
             } else {
                 alert(result.error || "予約の更新に失敗しました");
             }
@@ -337,15 +388,37 @@ export default function CalendarClient({
         setIsSubmitting(false);
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm("この予約を削除してもよろしいですか？")) return;
-        setIsSubmitting(true);
-        const result = await deleteBooking(id);
-        if (result.success) {
-            setBookings(prev => prev.filter(b => b.id !== id));
-            setIsModalOpen(false); // Close modal after deletion
+    const handleDelete = async (id: string, e?: React.MouseEvent) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
         }
-        setIsSubmitting(false);
+        
+        const confirmMessage = "この予約を削除してもよろしいですか？\n\n【ご注意】\n※この予約に関連付けられた「カルテ（来店履歴）」がある場合、それらも同時に削除されます。";
+        if (!window.confirm(confirmMessage)) return;
+        
+        console.log(`[CalendarClient] Initiating deletion for booking ${id}`);
+        setIsSubmitting(true);
+        try {
+            const result = await deleteBooking(id);
+            if (result.success) {
+                console.log(`[CalendarClient] Delete successful for ${id}`);
+                setBookings(prev => prev.filter(b => b.id !== id));
+                setIsModalOpen(false);
+                setEditingId(null);
+                
+                // Optional: Show a subtle success toast if you had a toast system
+                // For now, just ensuring the UI is closed is good feedback.
+            } else {
+                console.error(`[CalendarClient] Delete failed for ${id}:`, result.error);
+                alert(result.error || "予約の削除に失敗しました");
+            }
+        } catch (err) {
+            console.error(`[CalendarClient] Unexpected error during deletion of ${id}:`, err);
+            alert("通信エラーが発生しました。時間を置いて再度お試しください。");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const toggleExpand = (id: string, e: React.MouseEvent) => {
@@ -362,12 +435,24 @@ export default function CalendarClient({
         setIsSubmitting(true);
         const result = await convertToVisit(id, price, payment_method);
         if (result.success) {
-            setBookings(prev => prev.map(b => b.id === id ? { ...b, status: "completed" } : b));
+            setBookings(prev => prev.map(b => 
+                b.id === id 
+                    ? { ...b, status: "completed", price: price, payment_method: payment_method || b.payment_method } 
+                    : b
+            ));
+            // Close any open detail view
+            setExpandedBookingIds(prev => {
+                const next = new Set(prev);
+                next.delete(id);
+                return next;
+            });
         } else {
             alert(result.error);
         }
         setIsSubmitting(false);
     };
+
+    if (!isMounted) return null;
 
     return (
         <div className="flex flex-col min-h-screen pb-20 bg-white">
@@ -850,45 +935,38 @@ export default function CalendarClient({
                                     <PlusCircle className="w-3 h-3 text-emerald-500" /> オプション・割引
                                 </label>
                                 <div className="space-y-3">
-                                    <select
-                                        value=""
-                                        onChange={(e) => {
-                                            const optionId = e.target.value;
-                                            const option = optionServices.find(o => o.id === optionId);
-                                            if (option) toggleOption(option);
-                                        }}
-                                        className="w-full p-3 bg-stone-50 text-stone-900 border-stone-200 border rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/50 outline-none"
-                                    >
-                                        <option value="">オプション・割引を選択</option>
-                                        {optionServices.map(option => (
-                                            <option key={option.id} value={option.id}>
-                                                {selectedOptionIds.includes(option.id) ? "✓ " : ""}{option.name} ({option.price > 0 ? "+" : ""}{option.price.toLocaleString()}円)
-                                            </option>
-                                        ))}
-                                    </select>
-
-                                    {selectedOptionIds.length > 0 && (
-                                        <div className="flex flex-wrap gap-2">
-                                            {selectedOptionIds.map(id => {
-                                                const option = optionServices.find(o => o.id === id);
-                                                if (!option) return null;
-                                                return (
-                                                    <button
-                                                        key={id}
-                                                        type="button"
-                                                        onClick={() => toggleOption(option)}
-                                                        className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold shadow-sm hover:bg-emerald-700 transition-colors"
-                                                    >
-                                                        <Check className="w-3 h-3" />
-                                                        {option.name}
-                                                        <span className="ml-1 opacity-80 text-[10px]">×</span>
-                                                    </button>
-                                                );
-                                            })}
+                                    {selectedOptions.map((opt, index) => (
+                                        <div key={opt.id} className="flex items-center gap-2">
+                                            <select
+                                                value={opt.optionId}
+                                                onChange={(e) => updateOption(opt.id, e.target.value)}
+                                                className="flex-1 p-3 bg-stone-50 text-stone-900 border-stone-200 border rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/50 outline-none"
+                                            >
+                                                <option value="">オプション・割引を選択</option>
+                                                {optionServices.map(option => (
+                                                    <option key={option.id} value={option.id}>
+                                                        {option.name} ({option.price > 0 ? "+" : ""}{option.price.toLocaleString()}円)
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <button
+                                                type="button"
+                                                onClick={() => removeOption(opt.id)}
+                                                className="p-3 bg-stone-100 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                                            >
+                                                <X className="w-5 h-5" />
+                                            </button>
                                         </div>
-                                    )}
+                                    ))}
+                                    <button
+                                        type="button"
+                                        onClick={addOption}
+                                        className="w-full py-3 border-2 border-dashed border-stone-200 text-stone-500 font-bold rounded-xl hover:border-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        <Plus className="w-4 h-4" /> オプションを追加
+                                    </button>
                                 </div>
-                                <p className="text-[10px] text-stone-400 mt-2">※コース選択と同じ方法で選べるようになりました。選択したオプションはタグで表示されます。</p>
+                                <p className="text-[10px] text-stone-400 mt-2">※コース選択と同じ方法で選べるようになりました。複数の同じオプションを追加することも可能です。</p>
                             </div>
 
                             <div className="col-span-2">
@@ -946,7 +1024,7 @@ export default function CalendarClient({
                                 {formMode === "edit" && (
                                     <button
                                         type="button"
-                                        onClick={() => editingId && handleDelete(editingId)}
+                                        onClick={(e) => editingId && handleDelete(editingId, e)}
                                         className="p-4 bg-stone-100 text-stone-400 rounded-2xl hover:bg-stone-200 active:scale-[0.98] transition-all"
                                     >
                                         <Trash2 className="w-6 h-6" />

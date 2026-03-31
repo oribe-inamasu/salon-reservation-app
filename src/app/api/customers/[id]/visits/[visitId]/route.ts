@@ -22,8 +22,14 @@ export async function PUT(
             return NextResponse.json({ success: false, error: "来店日時は必須です" }, { status: 400 });
         }
 
-        const price = data.price !== undefined && data.price !== "" ? parseInt(String(data.price), 10) : undefined;
-        const adjustment_price = data.adjustment_price !== undefined && data.adjustment_price !== "" ? parseInt(String(data.adjustment_price), 10) : undefined;
+        const safeParseInt = (val: any, defaultVal: number | undefined) => {
+            if (val === undefined || val === "" || val === null) return defaultVal;
+            const parsed = parseInt(String(val), 10);
+            return isNaN(parsed) ? defaultVal : parsed;
+        };
+
+        const price = safeParseInt(data.price, undefined);
+        const adjustment_price = safeParseInt(data.adjustment_price, undefined);
 
         const visitData = {
             visit_date: data.visit_date ? new Date(data.visit_date as string) : undefined,
@@ -34,6 +40,7 @@ export async function PUT(
             staff: data.staff !== undefined ? data.staff as string : undefined,
             adjustment_price: adjustment_price !== undefined ? adjustment_price : undefined,
             payment_method: data.payment_method !== undefined ? data.payment_method as string : undefined,
+            options: data.options !== undefined ? (data.options as string | null) : undefined,
         };
 
         const updatedVisit = await prisma.visitHistory.update({
@@ -43,21 +50,28 @@ export async function PUT(
 
         console.log(`[API: PUT visit] Visit updated successfully:`, updatedVisit.id);
 
-        // If there is an associated booking, update it too
+        // If there is an associated booking, update it too if it still exists
         if (visit.bookingId) {
             console.log(`[API: PUT visit] Syncing to Booking ${visit.bookingId}`);
-            await prisma.booking.update({
-                where: { id: visit.bookingId },
-                data: {
-                    start_time: data.visit_date ? new Date(data.visit_date) : undefined,
-                    treatment_category: data.treatment_category !== undefined ? data.treatment_category : undefined,
-                    price: price !== undefined ? price : null,
-                    memo: data.staff_memo !== undefined ? data.staff_memo : undefined,
-                    staff: data.staff !== undefined ? data.staff : undefined,
-                    adjustment_price: adjustment_price !== undefined ? adjustment_price : undefined,
-                    payment_method: data.payment_method !== undefined ? data.payment_method : undefined,
-                }
-            });
+            const bookingExists = await prisma.booking.findUnique({ where: { id: visit.bookingId } });
+            if (bookingExists) {
+                await prisma.booking.update({
+                    where: { id: visit.bookingId },
+                    data: {
+                        start_time: data.visit_date ? new Date(data.visit_date) : undefined,
+                        treatment_category: data.treatment_category !== undefined ? data.treatment_category : undefined,
+                        treatment_content: data.treatment_content !== undefined ? data.treatment_content : undefined,
+                        price: price !== undefined ? price : null,
+                        memo: data.staff_memo !== undefined ? data.staff_memo : undefined,
+                        staff: data.staff !== undefined ? data.staff : undefined,
+                        adjustment_price: adjustment_price !== undefined ? adjustment_price : undefined,
+                        payment_method: data.payment_method !== undefined ? data.payment_method : undefined,
+                        options: data.options !== undefined ? (data.options as string | null) : undefined,
+                    }
+                });
+            } else {
+                console.warn(`[API: PUT visit] Linked booking ${visit.bookingId} not found. Skipping sync.`);
+            }
         }
 
         return NextResponse.json({ success: true, visitId: updatedVisit.id }, { status: 200 });
@@ -75,27 +89,49 @@ export async function DELETE(
     const { id: customerId, visitId } = await params;
 
     try {
-        const visit = await prisma.visitHistory.findUnique({ where: { id: visitId } });
-        if (!visit || visit.customerId !== customerId) {
-            return NextResponse.json({ success: false, error: "カルテが見つかりません" }, { status: 404 });
+        console.log(`[API: DELETE visit] Deleting visit ${visitId} for customer ${customerId}`);
+        
+        // 1. Fetch visit and linked booking info
+        const visit = await prisma.visitHistory.findUnique({ 
+            where: { id: visitId },
+            select: { id: true, customerId: true, bookingId: true }
+        });
+        
+        if (!visit) {
+            console.warn(`[API: DELETE visit] Visit ${visitId} not found. Already deleted.`);
+            return NextResponse.json({ success: true, message: "カルテは既に削除されています" }, { status: 200 });
+        }
+        
+        if (visit.customerId !== customerId) {
+            console.error(`[API: DELETE visit] Customer mismatch: ${visit.customerId} !== ${customerId}`);
+            return NextResponse.json({ success: false, error: "不適切なアクセスです" }, { status: 403 });
         }
 
-        // If a linked booking exists, delete the booking (which cascades to delete the visit history)
+        // 2. Handle deletion (Visit + optional Booking)
         if (visit.bookingId) {
+            console.log(`[API: DELETE visit] Found linked booking ${visit.bookingId}. Attempting to delete...`);
             const bookingExists = await prisma.booking.findUnique({ where: { id: visit.bookingId } });
+            
             if (bookingExists) {
+                // Deleting the booking will cascade to the visit history via prisma schema
                 await prisma.booking.delete({ where: { id: visit.bookingId } });
+                console.log(`[API: DELETE visit] Booking ${visit.bookingId} and linked visit ${visitId} deleted via cascade.`);
             } else {
+                console.log(`[API: DELETE visit] Linked booking ${visit.bookingId} not found. Deleting visit directly.`);
                 await prisma.visitHistory.delete({ where: { id: visitId } });
             }
         } else {
-            // Otherwise just delete the visit history
+            console.log(`[API: DELETE visit] No linked booking. Deleting visit history ${visitId} directly.`);
             await prisma.visitHistory.delete({ where: { id: visitId } });
         }
 
         return NextResponse.json({ success: true }, { status: 200 });
     } catch (error) {
-        console.error("Visit delete error:", error);
-        return NextResponse.json({ success: false, error: "カルテの削除に失敗しました" }, { status: 500 });
+        console.error("[API: DELETE visit] Unexpected error during deletion:", error);
+        return NextResponse.json({ 
+            success: false, 
+            error: "カルテの削除に失敗しました", 
+            details: error instanceof Error ? error.message : "Internal Server Error" 
+        }, { status: 500 });
     }
 }

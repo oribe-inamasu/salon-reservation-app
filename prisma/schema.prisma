@@ -100,6 +100,7 @@ model VisitHistory {
   payment_method     String?
   booking            Booking? @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   customer           Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  options            String?
 }
 
 model Booking {
@@ -119,6 +120,7 @@ model Booking {
   payment_method     String?
   customer           Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
   visitHistory       VisitHistory?
+  options            String?
 }
 
 model AppSetting {

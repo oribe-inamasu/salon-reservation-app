@@ -43,6 +43,7 @@ export async function createBooking(data: {
     staff?: string;
     adjustment_price?: number;
     payment_method?: string;
+    options?: string;
 }) {
     try {
         console.log("Creating booking with data in action:", data);
@@ -59,6 +60,7 @@ export async function createBooking(data: {
                 staff: data.staff || null,
                 adjustment_price: data.adjustment_price !== undefined ? parseInt(String(data.adjustment_price), 10) : 0,
                 payment_method: data.payment_method || null,
+                options: data.options || null,
             },
         });
         console.log("Booking created successfully:", booking.id);
@@ -83,6 +85,7 @@ export async function updateBooking(id: string, data: {
     staff?: string;
     adjustment_price?: number;
     payment_method?: string;
+    options?: string;
 }) {
     try {
         console.log(`[Action: updateBooking] Updating booking ${id} with data:`, data);
@@ -105,6 +108,7 @@ export async function updateBooking(id: string, data: {
                 staff: data.staff !== undefined ? data.staff : undefined,
                 adjustment_price: adjustment_price !== undefined ? adjustment_price : undefined,
                 payment_method: data.payment_method !== undefined ? data.payment_method : undefined,
+                options: data.options !== undefined ? data.options : undefined,
             },
             include: { customer: true },
         });
@@ -118,14 +122,15 @@ export async function updateBooking(id: string, data: {
             await prisma.visitHistory.update({
                 where: { id: visit.id },
                 data: {
-                    visit_date: data.start_time,
+                    visit_date: data.start_time !== undefined ? data.start_time : undefined,
                     treatment_category: data.treatment_category !== undefined ? data.treatment_category : undefined,
-                    price: price !== undefined ? price : null,
+                    treatment_content: data.treatment_content !== undefined ? data.treatment_content : undefined,
+                    price: price !== undefined ? price : undefined,
                     adjustment_price: adjustment_price !== undefined ? adjustment_price : undefined,
                     staff: data.staff !== undefined ? data.staff : undefined,
                     payment_method: data.payment_method !== undefined ? data.payment_method : undefined,
-                    // If the memo changed, it might affect treatment_content or staff_memo
                     staff_memo: data.memo !== undefined ? data.memo : undefined,
+                    options: data.options !== undefined ? data.options : undefined,
                 },
             });
         }
@@ -140,13 +145,37 @@ export async function updateBooking(id: string, data: {
 
 export async function deleteBooking(id: string) {
     try {
+        console.log(`[Action: deleteBooking] Starting deletion for booking ${id}`);
+        const booking = await prisma.booking.findUnique({ 
+            where: { id },
+            select: { id: true, customerId: true }
+        });
+
+        if (!booking) {
+            console.warn(`[Action: deleteBooking] Booking ${id} not found. Already deleted.`);
+            return { success: true };
+        }
+
+        // Check if there's a linked visit history (for logging purposes)
+        const linkedVisit = await prisma.visitHistory.findUnique({ where: { bookingId: id } });
+        if (linkedVisit) {
+            console.log(`[Action: deleteBooking] Booking ${id} has linked visit ${linkedVisit.id}. Cascade delete will triggered.`);
+        }
+
         await prisma.booking.delete({
             where: { id },
         });
+
+        console.log(`[Action: deleteBooking] Successfully deleted booking ${id}`);
+        
+        // Revalidate multiple paths to ensure UI is in sync
         revalidatePath("/appointments");
+        revalidatePath(`/customers/${booking.customerId}`);
+        revalidatePath("/reports");
+        
         return { success: true };
     } catch (error) {
-        console.error("Failed to delete booking:", error);
+        console.error(`[Action: deleteBooking] Failed to delete booking ${id}:`, error);
         return { success: false, error: "予約の削除に失敗しました" };
     }
 }
@@ -173,6 +202,7 @@ export async function convertToVisit(bookingId: string, price?: number, payment_
                 staff: booking.staff || null,
                 adjustment_price: booking.adjustment_price || 0,
                 payment_method: payment_method || booking.payment_method || null,
+                options: booking.options || null,
             },
             create: {
                 customerId: booking.customerId,
@@ -184,6 +214,7 @@ export async function convertToVisit(bookingId: string, price?: number, payment_
                 staff: booking.staff || null,
                 adjustment_price: booking.adjustment_price || 0,
                 payment_method: payment_method || booking.payment_method || null,
+                options: booking.options || null,
             },
         });
 
