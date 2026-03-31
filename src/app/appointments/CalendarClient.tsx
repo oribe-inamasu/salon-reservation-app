@@ -724,6 +724,28 @@ export default function CalendarClient({
                                                         </div>
                                                     </div>
 
+                                                    {booking.options && (
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {(() => {
+                                                                try {
+                                                                    const selectedOptionIds = JSON.parse(booking.options) as string[];
+                                                                    return selectedOptionIds.map((optId, idx) => {
+                                                                        const opt = optionServices.find(o => o.id === optId);
+                                                                        if (!opt) return null;
+                                                                        return (
+                                                                            <span key={`${optId}-${idx}`} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 text-[9px] font-bold rounded-full border border-blue-100 dark:border-blue-800">
+                                                                                <PlusCircle className="w-2.5 h-2.5" />
+                                                                                {opt.name}
+                                                                            </span>
+                                                                        );
+                                                                    });
+                                                                } catch (e) {
+                                                                    return null;
+                                                                }
+                                                            })()}
+                                                        </div>
+                                                    )}
+
                                                     {booking.memo && (
                                                         <div className="text-xs text-stone-500 italic border-l-2 border-stone-200 pl-2 py-0.5 whitespace-pre-wrap">
                                                             {booking.memo}
