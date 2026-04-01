@@ -76,6 +76,7 @@ model Customer {
   possible_pregnancy     String?
   referral_source        String?
   additional_concerns    String?
+  pregnancy_duration     String?
   createdAt              DateTime       @default(now())
   updatedAt              DateTime       @updatedAt
   attribute_label        String?

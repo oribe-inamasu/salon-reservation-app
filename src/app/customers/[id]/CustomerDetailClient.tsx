@@ -30,6 +30,8 @@ type SerializedCustomer = {
     possible_pregnancy: string | null;
     referral_source: string | null;
     additional_concerns: string | null;
+    pregnancy_duration: string | null;
+    attribute_label: string | null;
     createdAt: string;
     updatedAt: string;
     visitHistories: Array<{
@@ -222,6 +224,29 @@ export default function CustomerDetailClient({
                                 <div>
                                     <dt className="text-xs text-muted-foreground mb-1">マッサージ頻度</dt>
                                     <dd className="text-sm font-medium">{customer.massage_frequency || "未入力"}</dd>
+                                </div>
+                                <div>
+                                    <dt className="text-xs text-muted-foreground mb-1">考えられる原因</dt>
+                                    <dd className="text-sm font-medium">{customer.possible_cause || "未入力"}</dd>
+                                </div>
+                                <div>
+                                    <dt className="text-xs text-muted-foreground mb-1">現在治療中の怪我や病気</dt>
+                                    <dd className="text-sm font-medium">{customer.current_treatment || "未入力"}</dd>
+                                </div>
+                                <div>
+                                    <dt className="text-xs text-muted-foreground mb-1">過去の大きなケガや病気</dt>
+                                    <dd className="text-sm font-medium">{customer.past_injury || "未入力"}</dd>
+                                </div>
+                                <div>
+                                    <dt className="text-xs text-muted-foreground mb-1">揉み返しの経験</dt>
+                                    <dd className="text-sm font-medium">{customer.experienced_momikaeshi || "未入力"}</dd>
+                                </div>
+                                <div>
+                                    <dt className="text-xs text-muted-foreground mb-1">妊娠の可能性</dt>
+                                    <dd className="text-sm font-medium">
+                                        {customer.possible_pregnancy || "未入力"}
+                                        {customer.pregnancy_duration && ` (${customer.pregnancy_duration})`}
+                                    </dd>
                                 </div>
                                 <div>
                                     <dt className="text-xs text-muted-foreground mb-1">当院を知ったきっかけ</dt>

@@ -70,6 +70,7 @@ const getFormSections = (serviceNames: string[]): FormSection[] => [
             { key: "massage_frequency", label: "マッサージの頻度", type: "select", options: ["初めて", "年に数回", "月に1回", "月に2〜3回", "週に1回以上"] as const },
             { key: "experienced_momikaeshi", label: "揉み返しの経験", type: "select", options: ["はい", "いいえ", "わからない"] as const },
             { key: "possible_pregnancy", label: "妊娠の可能性", type: "select", options: ["はい", "いいえ"] as const },
+            { key: "pregnancy_duration", label: "妊娠期間（該当者のみ）", placeholder: "例: 5ヶ月" },
             { key: "referral_source", label: "当院を知ったきっかけ", placeholder: "例: Google検索、友人の紹介" },
             { key: "additional_concerns", label: "自由記述・お身体で不安なこと", type: "textarea", placeholder: "どんなことでもご記入ください" },
         ],

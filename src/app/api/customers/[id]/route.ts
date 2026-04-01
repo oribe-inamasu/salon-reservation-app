@@ -64,6 +64,7 @@ export async function PUT(
                 possible_pregnancy: data.possible_pregnancy || null,
                 referral_source: data.referral_source || null,
                 additional_concerns: data.additional_concerns || null,
+                pregnancy_duration: data.pregnancy_duration || null,
                 attribute_label: data.attribute_label || null,
             },
         });

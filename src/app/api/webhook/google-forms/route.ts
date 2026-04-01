@@ -32,8 +32,9 @@ export async function POST(req: Request) {
                 massage_frequency: data["17. マッサージなどの施術はどのくらいの頻度で受けますか？"] || null,
                 experienced_momikaeshi: data["18. 揉み返しが出たことがありますか？"] || null,
                 possible_pregnancy: data["19. 妊娠している可能性がありますか？"] || null,
-                referral_source: data["20. 当院を何でお知りになりましたか？"] || null,
-                additional_concerns: data["21. お身体で不安に思っている事、またお身体以外でもお気づきの事、どんな事でもご記入ください"] || null,
+                pregnancy_duration: data["20. ※「はい」とお答えの方、妊娠期間がわかれば教えてください"] || null,
+                referral_source: data["21. 当院を何で知りになりましたか？"] || data["21. 当院を何でお知りになりましたか？"] || data["20. 当院を何でお知りになりましたか？"] || null,
+                additional_concerns: data["22. お身体で不安に思っている事、またお身体以外でもお気づきの事、どんな事でもご記入ください"] || data["22. お身体で不安に思っている事、またお身体以外でもお気づきの事、どんな事でもご記入ください"] || data["21. お身体で不安に思っている事、またお身体以外でもお気づきの事、どんな事でもご記入ください"] || null,
             },
         });
 
