@@ -4,19 +4,8 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { ChevronLeft, Edit3, Calendar, Clock, FileText, Phone, MapPin, Plus, TrendingUp, Award, PlusCircle } from "lucide-react";
 import { OptionService } from "@/lib/settings";
+import { calculateAge } from "@/lib/date-utils";
 
-function calculateAge(birthDateStr: string | null): number | null {
-    if (!birthDateStr) return null;
-    const birthDate = new Date(birthDateStr);
-    if (isNaN(birthDate.getTime())) return null;
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const m = today.getMonth() - birthDate.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
-    }
-    return age;
-}
 
 type SerializedCustomer = {
     id: string;

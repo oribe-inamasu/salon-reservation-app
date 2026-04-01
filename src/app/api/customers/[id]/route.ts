@@ -21,6 +21,8 @@ export async function GET(
     }
 }
 
+import { normalizeBirthDate } from "@/lib/date-utils";
+
 // PUT (update) a customer
 export async function PUT(
     req: Request,
@@ -43,7 +45,7 @@ export async function PUT(
             data: {
                 name: data.name,
                 furigana: data.furigana,
-                birth_date: data.birth_date || null,
+                birth_date: normalizeBirthDate(data.birth_date),
                 phone_number: data.phone_number || null,
                 address: data.address || null,
                 occupation: data.occupation || null,

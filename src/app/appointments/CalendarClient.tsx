@@ -34,6 +34,7 @@ import { CheckCircle2, ChevronRight as ChevronRightIcon, RotateCcw } from "lucid
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { calculateTotalPrice } from "@/lib/utils";
+import { calculateAge } from "@/lib/date-utils";
 
 function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
@@ -194,15 +195,6 @@ export default function CalendarClient({
         return customers.filter(c => c.birth_date?.endsWith(targetMMDD));
     }, [customers, selectedDate]);
 
-    const calculateAge = (birthDateStr: string, referenceDate: Date) => {
-        const birthDate = new Date(birthDateStr);
-        let age = referenceDate.getFullYear() - birthDate.getFullYear();
-        const m = referenceDate.getMonth() - birthDate.getMonth();
-        if (m < 0 || (m === 0 && referenceDate.getDate() < birthDate.getDate())) {
-            age--;
-        }
-        return age;
-    };
 
     const handleAddClick = () => {
         setFormMode("create");

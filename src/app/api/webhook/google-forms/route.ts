@@ -3,6 +3,8 @@ export const dynamic = "force-dynamic";
 import prisma from "@/lib/prisma";
 import { sendLineNotification } from "@/lib/line";
 
+import { normalizeBirthDate } from "@/lib/date-utils";
+
 export async function POST(req: Request) {
     try {
         const data = await req.json();
@@ -13,7 +15,7 @@ export async function POST(req: Request) {
             data: {
                 name: data["01. お名前"] || "未入力",
                 furigana: data["02. フリガナ"] || "未入力",
-                birth_date: data["03.生年月日"] || null,
+                birth_date: normalizeBirthDate(data["03.生年月日"]),
                 occupation: data["04. ご職業"] || null,
                 address: data["05.ご住所"] || null,
                 phone_number: data["06.電話番号"] || null,

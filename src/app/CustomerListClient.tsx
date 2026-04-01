@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { Search, Plus, User, ChevronRight, ChevronDown, Check } from "lucide-react";
 import type { CustomerLabel } from "@/lib/settings";
+import { calculateAge } from "@/lib/date-utils";
 
 type CustomerWithVisits = {
     id: string;
@@ -17,18 +18,6 @@ type CustomerWithVisits = {
     birthDate: string | null;
 };
 
-function calculateAge(birthDateStr: string | null): number | null {
-    if (!birthDateStr) return null;
-    const birthDate = new Date(birthDateStr);
-    if (isNaN(birthDate.getTime())) return null;
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const m = today.getMonth() - birthDate.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
-    }
-    return age;
-}
 
 type SortType = "newest" | "furigana" | "lastVisit" | "visitCount";
 
