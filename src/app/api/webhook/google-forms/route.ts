@@ -76,7 +76,7 @@ ${customer.past_injury || "未入力"}
 
 マッサージ等の頻度: ${customer.massage_frequency || "未入力"}
 揉み返しが出たこと: ${customer.experienced_momikaeshi || "未入力"}
-妊娠している可能性: ${customer.possible_pregnancy || "未入力"}
+妊娠している可能性: ${customer.possible_pregnancy || "未入力"}${customer.pregnancy_duration ? `（期間: ${customer.pregnancy_duration}）` : ""}
 
 当院を知ったきっかけ: ${customer.referral_source || "未入力"}
 
