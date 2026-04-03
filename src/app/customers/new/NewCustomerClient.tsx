@@ -182,6 +182,24 @@ export default function NewCustomerClient({
                                             rows={3}
                                             className="w-full p-3 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 border-none rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow resize-none"
                                         />
+                                    ) : field.type === "date" ? (
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="date"
+                                                value={formData[field.key] || ""}
+                                                onChange={(e) => handleChange(field.key, e.target.value)}
+                                                className="flex-1 w-full p-3 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 border-none rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
+                                            />
+                                            {formData[field.key] && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleChange(field.key, "")}
+                                                    className="px-4 py-3 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-sm font-bold hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors whitespace-nowrap"
+                                                >
+                                                    クリア
+                                                </button>
+                                            )}
+                                        </div>
                                     ) : (
                                         <input
                                             type={field.type || "text"}
