@@ -691,6 +691,13 @@ export default function CalendarClient({
                                                 )}
                                             </div>
 
+                                            {/* Payment Method */}
+                                            <div className="flex-shrink-0 mr-1">
+                                                <span className="text-[10px] font-bold bg-stone-100 text-stone-500 px-1.5 py-0.5 rounded border border-stone-200 shadow-sm">
+                                                    {booking.payment_method || "現金"}
+                                                </span>
+                                            </div>
+
                                             {/* 3. Price & Chevron */}
                                             <div className="flex items-center gap-2 flex-shrink-0">
                                                 <div className="text-sm font-bold text-blue-600">
