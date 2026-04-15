@@ -221,6 +221,7 @@ export default function CalendarClient({
         setFormEndTime(format(booking.end_time, "HH:mm"));
         setFormCategory(booking.treatment_category || "");
         setFormContent(booking.treatment_content || "");
+        setFormPrice(String(booking.price || 0)); // Fix: Added missing price initialization
         setFormAdjustment(String(booking.adjustment_price || 0));
         setFormPaymentMethod(booking.payment_method || "現金");
         setFormStaff(booking.staff || "");
@@ -231,7 +232,7 @@ export default function CalendarClient({
                        serviceCourses.find(c => c.category === booking.treatment_category);
         setSelectedCourseId(course?.id || "");
 
-        // Parse options from the new options field, or fallback to memo for old data
+        // Parse options from the new options field
         let initialOptions: string[] = [];
         if (booking.options) {
             try {
@@ -239,11 +240,8 @@ export default function CalendarClient({
             } catch (e) {
                 console.error("Failed to parse booking options:", e);
             }
-        } else {
-            initialOptions = optionServices
-                .filter(opt => booking.memo?.includes(`[${opt.name}]`))
-                .map(opt => opt.id);
         }
+        // Removed fallback that re-adds options from memo, as it causes deleted options to reappear
         
         setSelectedOptions(initialOptions.map(id => ({ id: crypto.randomUUID(), optionId: id })));
 
@@ -316,8 +314,9 @@ export default function CalendarClient({
         const [endH, endM] = formEndTime.split(":").map(Number);
         end.setHours(endH, endM, 0, 0);
 
-        const price = parseInt(formPrice) || 0;
+        const priceValue = parseInt(formPrice) || 0;
         const optionIdList = selectedOptions.map(o => o.optionId).filter(id => id !== "");
+        // If the list is empty, explictly pass null to clear it in the database
         const optionsJson = optionIdList.length > 0 ? JSON.stringify(optionIdList) : null;
 
         if (formMode === "create") {
@@ -327,7 +326,7 @@ export default function CalendarClient({
                 end_time: end,
                 treatment_category: formCategory,
                 treatment_content: formContent,
-                price: price,
+                price: priceValue,
                 adjustment_price: parseInt(formAdjustment) || 0,
                 payment_method: formPaymentMethod,
                 staff: formStaff || undefined,
@@ -355,12 +354,12 @@ export default function CalendarClient({
                 end_time: end,
                 treatment_category: formCategory,
                 treatment_content: formContent,
-                price: price,
+                price: priceValue,
                 adjustment_price: parseInt(formAdjustment) || 0,
                 payment_method: formPaymentMethod,
                 staff: formStaff || undefined,
                 memo: formMemo,
-                options: optionsJson ?? undefined,
+                options: optionsJson, // Explicitly pass null to clear
             });
 
             if (result.success && result.booking) {

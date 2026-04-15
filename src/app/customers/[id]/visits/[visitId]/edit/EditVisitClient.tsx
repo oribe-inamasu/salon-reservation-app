@@ -58,7 +58,9 @@ export default function EditVisitClient({
     const [staffMemo, setStaffMemo] = useState(visit.staff_memo || "");
     const [paymentMethod, setPaymentMethod] = useState(visit.payment_method || "現金");
     const [selectedCourseId, setSelectedCourseId] = useState(() => {
-        const course = serviceCourses.find(c => c.name === visit.treatment_content || c.category === visit.treatment_category);
+        // Prioritize precise name match to avoid picking the wrong course in the same category
+        const course = serviceCourses.find(c => c.name === visit.treatment_content) || 
+                       serviceCourses.find(c => c.category === visit.treatment_category);
         return course?.id || "";
     });
 
@@ -70,12 +72,9 @@ export default function EditVisitClient({
             } catch (e) {
                 console.error("Failed to parse visit options:", e);
             }
-        } else {
-            // fallback for old records
-            initialOptions = optionServices
-                .filter(opt => visit.treatment_content?.includes(`[${opt.name}]`) || visit.staff_memo?.includes(`[${opt.name}]`))
-                .map(opt => opt.id);
         }
+        // Removed fallback that re-adds options from content/memo, as it causes deleted options to reappear
+        
         return initialOptions.map(id => ({ id: crypto.randomUUID(), optionId: id }));
     });
 
