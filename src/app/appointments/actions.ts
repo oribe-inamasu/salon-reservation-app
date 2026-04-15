@@ -43,7 +43,7 @@ export async function createBooking(data: {
     staff?: string;
     adjustment_price?: number;
     payment_method?: string;
-    options?: string;
+    options?: string | null;
 }) {
     try {
         console.log("Creating booking with data in action:", data);
@@ -85,7 +85,7 @@ export async function updateBooking(id: string, data: {
     staff?: string;
     adjustment_price?: number;
     payment_method?: string;
-    options?: string;
+    options?: string | null;
 }) {
     try {
         console.log(`[Action: updateBooking] Updating booking ${id} with data:`, data);
