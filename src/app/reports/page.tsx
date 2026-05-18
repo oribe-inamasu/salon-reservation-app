@@ -35,13 +35,14 @@ export default async function ReportsPage({
         where: {
             visit_date: {
                 gte: startOfMonth,
-                lt: endOfMonth, // End of month boundary
+                lt: endOfMonth,
             },
         },
         include: {
             customer: {
                 select: {
                     name: true,
+                    createdAt: true,
                 }
             }
         },
@@ -51,19 +52,39 @@ export default async function ReportsPage({
     });
 
     const totalSales = visits.reduce((sum, v) => sum + (v.price || 0), 0);
+    const totalVisitCount = visits.length;
 
-    // Aggregate by category
-    const categoryMap = new Map<string, number>();
+    // Monthly New Customer Count: Unique customers whose registration and at least one visit are in the same day
+    const newCustomerSet = new Set<string>();
+    const getLocalDateStr = (date: Date) => {
+        // Simple YYYY-MM-DD in local/JST context (assuming server/env is JST or consistent)
+        const d = new Date(date);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    };
+
+    visits.forEach(v => {
+        if (getLocalDateStr(v.visit_date) === getLocalDateStr(v.customer.createdAt)) {
+            newCustomerSet.add(v.customerId);
+        }
+    });
+    const newCustomerCount = newCustomerSet.size;
+
+    // Aggregate by category with person count
+    const categoryMap = new Map<string, { value: number, count: number }>();
     visits.forEach(v => {
         const category = (v.treatment_category && serviceNames.includes(v.treatment_category)) 
             ? v.treatment_category 
             : "その他";
-        categoryMap.set(category, (categoryMap.get(category) || 0) + (v.price || 0));
+        const current = categoryMap.get(category) || { value: 0, count: 0 };
+        categoryMap.set(category, { 
+            value: current.value + (v.price || 0), 
+            count: current.count + 1 
+        });
     });
 
     const salesByCategory = Array.from(categoryMap.entries())
-        .map(([name, value]) => ({ name, value }))
-        .filter(item => item.value > 0)
+        .map(([name, data]) => ({ name, value: data.value, count: data.count }))
+        .filter(item => item.value > 0 || item.count > 0)
         .sort((a, b) => b.value - a.value);
 
     // Aggregate by staff
@@ -125,6 +146,8 @@ export default async function ReportsPage({
             salesByPaymentMethod={salesByPaymentMethod}
             salesByStaff={filteredSalesByStaff}
             totalSales={totalSales}
+            newCustomerCount={newCustomerCount}
+            totalVisitCount={totalVisitCount}
             currentMonthLabel={currentMonthLabel}
             currentMonthValue={currentMonthValue}
             serviceColorMap={serviceColorMap}

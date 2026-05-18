@@ -18,6 +18,7 @@ function cn(...inputs: ClassValue[]) {
 type SalesDataPoint = {
     name: string;
     value: number;
+    count?: number;
     categories?: { name: string; value: number }[];
     visits?: Array<{
         id: string;
@@ -35,6 +36,8 @@ export default function ReportsClient({
     salesData,
     salesByStaff,
     totalSales,
+    newCustomerCount,
+    totalVisitCount,
     currentMonthLabel,
     currentMonthValue,
     serviceColorMap,
@@ -43,6 +46,8 @@ export default function ReportsClient({
     salesData: SalesDataPoint[];
     salesByStaff: SalesDataPoint[];
     totalSales: number;
+    newCustomerCount: number;
+    totalVisitCount: number;
     currentMonthLabel: string;
     currentMonthValue: string;
     serviceColorMap: Record<string, string>;
@@ -116,10 +121,24 @@ export default function ReportsClient({
                 </div>
 
                 {/* Total Sales Summary */}
-                <div className="bg-card border rounded-2xl p-6 shadow-sm text-center">
-                    <h2 className="text-sm font-medium text-muted-foreground mb-1">総売上</h2>
-                    <div className="text-3xl flex justify-center items-center font-bold text-foreground">
-                        ¥{totalSales.toLocaleString()}
+                <div className="grid grid-cols-3 gap-3">
+                    <div className="bg-card border rounded-2xl p-4 shadow-sm text-center">
+                        <h2 className="text-[10px] font-bold text-muted-foreground mb-1 uppercase tracking-wider">総売上</h2>
+                        <div className="text-lg font-bold text-foreground">
+                            ¥{totalSales.toLocaleString()}
+                        </div>
+                    </div>
+                    <div className="bg-card border rounded-2xl p-4 shadow-sm text-center border-pink-100 bg-pink-50/10">
+                        <h2 className="text-[10px] font-bold text-pink-500 mb-1 uppercase tracking-wider">新規客数</h2>
+                        <div className="text-lg font-bold text-pink-600">
+                            {newCustomerCount} <span className="text-[10px] font-medium text-pink-400">名</span>
+                        </div>
+                    </div>
+                    <div className="bg-card border rounded-2xl p-4 shadow-sm text-center border-blue-100 bg-blue-50/10">
+                        <h2 className="text-[10px] font-bold text-blue-500 mb-1 uppercase tracking-wider">総件数</h2>
+                        <div className="text-lg font-bold text-blue-600">
+                            {totalVisitCount} <span className="text-[10px] font-medium text-blue-400">件</span>
+                        </div>
                     </div>
                 </div>
 
@@ -194,7 +213,14 @@ export default function ReportsClient({
                                         className="w-3 h-3 rounded-full flex-shrink-0"
                                         style={{ backgroundColor: getCategoryColor(item.name) }}
                                     />
-                                    <span className="text-muted-foreground truncate">{item.name}</span>
+                                    <span className="text-muted-foreground truncate">
+                                        {item.name}
+                                        {reportType === "category" && item.count !== undefined && (
+                                            <span className="ml-1 text-[10px] font-medium text-muted-foreground/70">
+                                                ({item.count}人)
+                                            </span>
+                                        )}
+                                    </span>
                                 </div>
                                 <div className="font-bold flex-shrink-0">
                                     ¥{item.value.toLocaleString()}

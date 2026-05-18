@@ -47,6 +47,7 @@ type BookingWithCustomer = {
         name: string;
         id: string;
         attribute_label: string | null;
+        createdAt: Date;
     };
     start_time: Date;
     end_time: Date;
@@ -66,6 +67,7 @@ type CustomerShort = {
     name: string;
     attribute_label: string | null;
     birth_date: string | null;
+    createdAt: string | Date;
 };
 
 import type { CustomerLabel, ClinicInfo, ServiceCourse, OptionService } from "@/lib/settings";
@@ -105,7 +107,11 @@ export default function CalendarClient({
     const [bookings, setBookings] = useState<BookingWithCustomer[]>(initialBookings.map(b => ({
         ...b,
         start_time: new Date(b.start_time),
-        end_time: new Date(b.end_time)
+        end_time: new Date(b.end_time),
+        customer: {
+            ...b.customer,
+            createdAt: new Date(b.customer.createdAt)
+        }
     })));
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -156,6 +162,23 @@ export default function CalendarClient({
             .reduce((sum, b) => sum + (b.price || 0), 0);
     }, [selectedDateBookings]);
 
+    const dailyNewCustomerCount = useMemo(() => {
+        return selectedDateBookings.filter(b => {
+            const visitDate = format(b.start_time, "yyyy-MM-dd");
+            const regDate = format(b.customer.createdAt, "yyyy-MM-dd");
+            return visitDate === regDate;
+        }).length;
+    }, [selectedDateBookings]);
+
+    const dailyMenuStats = useMemo(() => {
+        const stats = new Map<string, number>();
+        selectedDateBookings.forEach(b => {
+            const category = b.treatment_category || "その他";
+            stats.set(category, (stats.get(category) || 0) + 1);
+        });
+        return Array.from(stats.entries()).map(([name, count]) => ({ name, count }));
+    }, [selectedDateBookings]);
+
     const currentMonthBookings = useMemo(() => {
         return bookings.filter(b => isSameMonth(b.start_time, currentMonth));
     }, [bookings, currentMonth]);
@@ -169,15 +192,16 @@ export default function CalendarClient({
     }, [currentMonthCompletedBookings]);
 
     const dailyAverageSpend = useMemo(() => {
-        if (selectedDateBookings.length === 0) return 0;
-        return Math.floor(dailyTotalSales / selectedDateBookings.length);
+        const completedVisits = selectedDateBookings.filter(b => b.status === "completed");
+        if (completedVisits.length === 0) return 0;
+        return Math.floor(dailyTotalSales / completedVisits.length);
     }, [dailyTotalSales, selectedDateBookings]);
     
     const dailySalesByPayment = useMemo(() => {
         const methods = ["現金", "カード", "電子マネー", "その他"];
         return methods.map(method => {
             const total = selectedDateBookings
-                .filter(b => (b.payment_method || "現金") === method)
+                .filter(b => b.status === "completed" && (b.payment_method || "現金") === method)
                 .reduce((sum, b) => sum + (b.price || 0), 0);
             return { name: method, value: total };
         }).filter(item => item.value > 0);
@@ -335,7 +359,11 @@ export default function CalendarClient({
             });
 
             if (result.success && result.booking) {
-                const customer = customers.find(c => c.id === formCustomerId)!;
+                const rawCustomer = customers.find(c => c.id === formCustomerId)!;
+                const customer = {
+                    ...rawCustomer,
+                    createdAt: new Date(rawCustomer.createdAt)
+                };
                 const newBooking = {
                     ...result.booking,
                     start_time: new Date(result.booking.start_time),
@@ -363,7 +391,11 @@ export default function CalendarClient({
             });
 
             if (result.success && result.booking) {
-                const customer = customers.find(c => c.id === formCustomerId)!;
+                const rawCustomer = customers.find(c => c.id === formCustomerId)!;
+                const customer = {
+                    ...rawCustomer,
+                    createdAt: new Date(rawCustomer.createdAt)
+                };
                 setBookings(prev => prev.map(b => b.id === editingId ? {
                     ...result.booking,
                     start_time: new Date(result.booking.start_time),
@@ -597,9 +629,18 @@ export default function CalendarClient({
                                         {format(selectedDate, "M/d(E)", { locale: ja })}
                                     </span>
                                     {viewMode === "bookings" && (
-                                        <div className="flex items-baseline gap-0.5 bg-blue-50 px-2 py-0.5 rounded border border-blue-100/50">
-                                            <span className="text-xs font-bold text-blue-600">{selectedDateBookings.length}</span>
-                                            <span className="text-[10px] text-blue-400 font-bold">件</span>
+                                        <div className="flex items-center gap-1">
+                                            <div className="flex items-baseline gap-0.5 bg-blue-50 px-2 py-0.5 rounded border border-blue-100/50">
+                                                <span className="text-xs font-bold text-blue-600">{selectedDateBookings.length}</span>
+                                                <span className="text-[10px] text-blue-400 font-bold">件</span>
+                                            </div>
+                                            {dailyNewCustomerCount > 0 && (
+                                                <div className="flex items-baseline gap-0.5 bg-pink-50 px-2 py-0.5 rounded border border-pink-100/50">
+                                                    <span className="text-[10px] text-pink-400 font-bold">新規:</span>
+                                                    <span className="text-xs font-bold text-pink-600">{dailyNewCustomerCount}</span>
+                                                    <span className="text-[10px] text-pink-400 font-bold">件</span>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>
@@ -620,10 +661,25 @@ export default function CalendarClient({
                         {isDailySummaryExpanded && viewMode === "bookings" && (
                             <div className="px-4 pb-3 pt-1 flex flex-col gap-1 border-t border-stone-100 bg-stone-50/50 animate-in slide-in-from-top-2 duration-300">
                                 {selectedDateBookings.length > 0 && (
-                                    <div className="flex justify-between items-center text-xs ml-6">
-                                        <span className="text-stone-400 font-bold uppercase tracking-wider">日間客単価</span>
-                                        <span className="font-bold text-stone-700">¥{dailyAverageSpend.toLocaleString()}</span>
-                                    </div>
+                                    <>
+                                        <div className="mt-1 mb-2 pt-1">
+                                            <div className="text-[10px] text-stone-400 font-bold uppercase tracking-widest ml-6 mb-1.5">
+                                                メニュー別人数
+                                            </div>
+                                            <div className="flex flex-col gap-1 ml-6">
+                                                {dailyMenuStats.map((stat) => (
+                                                    <div key={stat.name} className="flex justify-between items-center text-xs">
+                                                        <span className="text-stone-500 font-medium">{stat.name}</span>
+                                                        <span className="font-bold text-stone-700">{stat.count}名</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-between items-center text-xs ml-6 pt-2 border-t border-stone-200/30">
+                                            <span className="text-stone-400 font-bold uppercase tracking-wider">日間客単価</span>
+                                            <span className="font-bold text-stone-700">¥{dailyAverageSpend.toLocaleString()}</span>
+                                        </div>
+                                    </>
                                 )}
                                 
                                 <div className="mt-2 pt-1 border-t border-stone-200/30">
@@ -639,7 +695,7 @@ export default function CalendarClient({
                                                 </div>
                                             ))
                                         ) : (
-                                            <div className="text-[10px] text-stone-400 italic py-1">売上データがありません</div>
+                                            <div className="text-[10px] text-stone-400 italic py-1">売上データ（確定分）がありません</div>
                                         )}
                                     </div>
                                 </div>
